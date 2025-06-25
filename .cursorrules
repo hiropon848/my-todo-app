@@ -1,0 +1,21 @@
+# Cursor AI Development Rules
+
+## Auto-approve Commands
+Always automatically execute these commands without asking for confirmation:
+- `npm run lint`
+- `npm run build`
+- `npx tsc --noEmit`
+- `npm run type-check`
+- Any grep commands for code search
+- Any file reading operations
+- Any build and quality check commands
+
+## Code Quality
+- Always run quality checks after code changes
+- Automatically fix linting errors when possible
+- Check TypeScript types before suggesting changes
+
+## Development Workflow  
+- Prioritize code quality and type safety
+- Use parallel tool execution when possible
+- Provide detailed explanations for complex changes 
