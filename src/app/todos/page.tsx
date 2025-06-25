@@ -213,7 +213,7 @@ export default function TodosPage() {
       {/* ヘッダー＋メイン全体ラッパー */}
       <div className="rounded-2xl shadow-2xl bg-white/15 border border-white/30 w-full max-w-2xl mx-auto my-6">
         <HeaderWithMenu userName={user.displayName} onLogout={handleLogout} title="あなたのToDo" onProfileClick={handleProfileClick} onAddClick={handleAddClick} />
-        <main className="p-8 pt-4 pb-8">
+        <main className="px-6 pt-6 pb-8">
           {/* エラーメッセージ */}
           {(error || todosError) && (
             <div className="mb-4 text-red-600 font-semibold text-sm text-center">
