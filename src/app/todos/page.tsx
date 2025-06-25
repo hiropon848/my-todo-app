@@ -83,6 +83,9 @@ export default function TodosPage() {
         setError('編集に失敗しました');
         throw updateError;
       }
+      
+      // 成功時のトースト表示を追加
+      showToast('ToDoを更新しました', 'success');
     } catch (err) {
       // エラー時は元の値に戻す
       if (editingTodo) {
