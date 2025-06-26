@@ -113,6 +113,59 @@ export function useTodos(userId: string | null) {
     }
   };
 
+  // ToDo更新ロジック
+  const updateTodo = async (
+    id: string,
+    title: string,
+    text: string,
+    priorityId?: string,
+    onSuccess?: (todo: Todo) => void
+  ) => {
+    setError('');
+    try {
+      // 1. Supabaseで更新実行
+      const updateData: { task_title: string; task_text: string; priority_id?: string } = {
+        task_title: title,
+        task_text: text,
+      };
+      
+      if (priorityId) {
+        updateData.priority_id = priorityId;
+      }
+      
+      const { error: updateError } = await supabase.from('todos').update(updateData).eq('id', id);
+      
+      if (updateError) {
+        setError('編集に失敗しました');
+        throw updateError;
+      }
+      
+      // 2. 更新成功後、最新データを取得（Priority情報含む）
+      const { data: updatedTodo, error: fetchError } = await supabase
+        .from('todos')
+        .select(`*, priority:priorities(*)`)
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) {
+        setError('更新データの取得に失敗しました');
+        throw fetchError;
+      }
+      
+      // 3. レスポンス受信後にUI更新
+      setTodos(prev => prev.map(todo => 
+        todo.id === id ? updatedTodo : todo
+      ));
+      
+      // 成功コールバック実行
+      onSuccess?.(updatedTodo);
+      return true;
+    } catch (err) {
+      // エラー時は何もしない（UIは元のまま保持）
+      throw err;
+    }
+  };
+
   return { 
     todos, 
     setTodos, 
@@ -122,6 +175,7 @@ export function useTodos(userId: string | null) {
     toggleTodo, 
     toggleLoading,
     addTodo,
-    addLoading
+    addLoading,
+    updateTodo
   };
 }

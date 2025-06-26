@@ -14,6 +14,7 @@ import { ProfileModal } from '@/components/common/ProfileModal';
 import { Toast } from '@/components/common/Toast';
 import { useToast } from '@/hooks/useToast';
 import SubMenuIcon from '@/icons/menu-sub.svg';
+import { PriorityBadge } from '@/components/common/PriorityBadge';
 
 export default function TodosPage() {
   const router = useRouter();
@@ -29,8 +30,17 @@ export default function TodosPage() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // カスタムフック
-  const { todos, setTodos, loading, error: todosError, deleteTodo, toggleTodo, toggleLoading, addTodo } = useTodos(user?.id || null);
+  // useTodosカスタムフック
+  const { 
+    todos, 
+    loading, 
+    error: todosError, 
+    deleteTodo, 
+    toggleTodo, 
+    toggleLoading,
+    addTodo,
+    updateTodo
+  } = useTodos(user?.id || null);
   const { toast, showToast } = useToast();
 
   // 認証チェック（AuthContextで管理されているが、未認証時のリダイレクト処理）
@@ -70,53 +80,12 @@ export default function TodosPage() {
   const handleModalSave = async (id: string, title: string, text: string, priorityId?: string) => {
     setError('');
     try {
-      // ローカルで即時反映（priorityIdも含める）
-      setTodos(prev => prev.map(todo => {
-        if (todo.id === id) {
-          return { 
-            ...todo, 
-            task_title: title, 
-            task_text: text,
-            priority_id: priorityId || todo.priority_id
-          };
-        }
-        return todo;
-      }));
-      
-      // supabaseで更新（priorityIdも含める）
-      const updateData: { task_title: string; task_text: string; priority_id?: string } = {
-        task_title: title,
-        task_text: text,
-      };
-      
-      if (priorityId) {
-        updateData.priority_id = priorityId;
-      }
-      
-      const { error: updateError } = await supabase.from('todos').update(updateData).eq('id', id);
-      
-      if (updateError) {
-        setError('編集に失敗しました');
-        throw updateError;
-      }
-      
-      // 成功時のトースト表示を追加
-      showToast('ToDoを更新しました', 'success');
+      await updateTodo(id, title, text, priorityId, () => {
+        // 成功時のトースト表示
+        showToast('ToDoを更新しました', 'success');
+      });
     } catch (err) {
-              // エラー時は元の値に戻す
-        if (editingTodo) {
-          setTodos(prev => prev.map(todo => {
-            if (todo.id === id) {
-              return { 
-                ...todo, 
-                task_title: editingTodo.task_title, 
-                task_text: editingTodo.task_text,
-                priority_id: editingTodo.priority_id || todo.priority_id
-              };
-            }
-            return todo;
-          }));
-        }
+      // エラーハンドリング（useTodosでエラーメッセージは設定済み）
       throw err;
     }
   };
@@ -296,7 +265,10 @@ export default function TodosPage() {
                     disabled={toggleLoading === todo.id}
                   />
                   <div className="flex-1">
-                    <div className="font-bold text-lg text-text">{todo.task_title}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="font-bold text-lg text-text">{todo.task_title}</div>
+                      <PriorityBadge priority={todo.priority} size="sm" />
+                    </div>
                     <div className="text-text text-sm whitespace-pre-wrap">{todo.task_text}</div>
                   </div>
                   {/* メニューボタン */}
