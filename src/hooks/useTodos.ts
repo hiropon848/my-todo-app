@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
+import { usePriorities } from './usePriorities';
 
 export function useTodos(userId: string | null) {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -8,6 +9,9 @@ export function useTodos(userId: string | null) {
   const [error, setError] = useState('');
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
+
+  // Priority情報を取得
+  const { getDefaultPriorityId } = usePriorities();
 
   useEffect(() => {
     if (!userId) {
@@ -19,7 +23,10 @@ export function useTodos(userId: string | null) {
     (async () => {
       const { data: todosData, error: todosError } = await supabase
         .from('todos')
-        .select('*')
+        .select(`
+          *,
+          priority:priorities(*)
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (todosError) {
@@ -63,6 +70,7 @@ export function useTodos(userId: string | null) {
   const addTodo = async (
     title: string, 
     text: string, 
+    priorityId?: string,
     onSuccess?: (todo: Todo) => void
   ) => {
     setError('');
@@ -70,6 +78,14 @@ export function useTodos(userId: string | null) {
       setError('タイトルは必須です');
       return false;
     }
+    
+    // priorityIdが指定されていない場合はデフォルト（「中」）を使用
+    const finalPriorityId = priorityId || getDefaultPriorityId();
+    if (!finalPriorityId) {
+      setError('優先度データの取得に失敗しました');
+      return false;
+    }
+    
     setAddLoading(true);
     try {
       const { data: inserted, error: insertError } = await supabase.from('todos').insert({
@@ -77,7 +93,11 @@ export function useTodos(userId: string | null) {
         task_title: title,
         task_text: text,
         is_completed: false,
-      }).select().single();
+        priority_id: finalPriorityId,
+      }).select(`
+        *,
+        priority:priorities(*)
+      `).single();
       
       if (insertError) {
         setError('ToDoの追加に失敗しました');

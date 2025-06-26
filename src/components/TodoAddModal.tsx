@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import CloseIcon from '@/icons/close.svg';
+import ArrowDownIcon from '@/icons/arrow-down.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { usePriorities } from '@/hooks/usePriorities';
 
 interface TodoAddModalProps {
   isOpen: boolean;
-  onSave: (title: string, text: string) => Promise<void>;
+  onSave: (title: string, text: string, priorityId?: string) => Promise<void>;
   onCancel: () => void;
 }
 
 export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
+  const [selectedPriorityId, setSelectedPriorityId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
@@ -20,6 +23,9 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   const [titleError, setTitleError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Priority情報を取得
+  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = usePriorities();
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -50,6 +56,24 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
       setIsCancelling(false);
     }
   }, [isOpen]);
+
+  // デフォルト優先度設定（prioritiesが読み込まれた後）
+  useEffect(() => {
+    if (isOpen && !prioritiesLoading && priorities.length > 0 && selectedPriorityId === '') {
+      try {
+        const defaultPriorityId = getDefaultPriorityId();
+        if (defaultPriorityId) {
+          setSelectedPriorityId(defaultPriorityId);
+        }
+      } catch (error) {
+        console.error('Error setting default priority:', error);
+        // エラーが発生した場合は最初のpriorityを選択
+        if (priorities[0]) {
+          setSelectedPriorityId(priorities[0].id);
+        }
+      }
+    }
+  }, [isOpen, prioritiesLoading, priorities, selectedPriorityId, getDefaultPriorityId]);
 
   // タイトルのバリデーション
   const validateTitle = (value: string, blur = false) => {
@@ -84,16 +108,17 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
     // 閉じるアニメーションを開始
     setShowModal(false);
     // アニメーション完了後にモーダルを閉じる
-    setTimeout(() => {
-      setTitle('');
-      setText('');
-      setError('');
-      setTitleError('');
-      setTitleTouched(false);
-      setTitleFocused(false);
-      setIsCancelling(false); // フラグをリセット
-      onCancel();
-    }, 300); // CSSのduration-300と同じ300ms
+          setTimeout(() => {
+        setTitle('');
+        setText('');
+        setSelectedPriorityId('');
+        setError('');
+        setTitleError('');
+        setTitleTouched(false);
+        setTitleFocused(false);
+        setIsCancelling(false); // フラグをリセット
+        onCancel();
+      }, 300); // CSSのduration-300と同じ300ms
   }, [onCancel, isCancelling]);
 
   // ESCキーでモーダルを閉じる
@@ -119,12 +144,13 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
 
     setIsSaving(true);
     try {
-      await onSave(title, text);
+      await onSave(title, text, selectedPriorityId || undefined);
       // 保存成功時は閉じるアニメーションを実行
       setShowModal(false);
       setTimeout(() => {
         setTitle('');
         setText('');
+        setSelectedPriorityId('');
         setError('');
         setTitleError('');
         setTitleTouched(false);
@@ -250,6 +276,38 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
               )}
             </div>
             
+            <div>
+              <label htmlFor="add-modal-priority" className="block text-sm font-medium text-text mb-1">
+                優先度
+              </label>
+              <div className="relative">
+                <select
+                  id="add-modal-priority"
+                  value={selectedPriorityId}
+                  onChange={(e) => setSelectedPriorityId(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 appearance-none"
+                  disabled={isSaving || prioritiesLoading}
+                >
+                  {prioritiesLoading ? (
+                    <option value="">読み込み中...</option>
+                  ) : (
+                    priorities.map((priority) => (
+                      <option key={priority.id} value={priority.id}>
+                        {priority.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pointer-events-none pr-0">
+                  <ArrowDownIcon 
+                    width="46" 
+                    height="46" 
+                    className="text-[#374151]"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="add-modal-text" className="block text-sm font-medium text-text mb-1">
                 本文

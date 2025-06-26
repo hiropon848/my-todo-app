@@ -23,7 +23,7 @@ export default function TodosPage() {
   const [showCompletedLoading, setShowCompletedLoading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingTodo, setEditingTodo] = useState<{ id: string; task_title: string; task_text: string } | null>(null);
+  const [editingTodo, setEditingTodo] = useState<{ id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } } | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingTodo, setDeletingTodo] = useState<{ id: string; task_title: string } | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -60,24 +60,40 @@ export default function TodosPage() {
   };
 
   // 編集開始（モーダルを開く）
-  const startEdit = (todo: { id: string; task_title: string; task_text: string }) => {
+  const startEdit = (todo: { id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } }) => {
     setEditingTodo(todo);
     setEditModalOpen(true);
     setOpenMenuId(null);
   };
 
   // モーダル保存処理
-  const handleModalSave = async (id: string, title: string, text: string) => {
+  const handleModalSave = async (id: string, title: string, text: string, priorityId?: string) => {
     setError('');
     try {
-      // ローカルで即時反映
-      setTodos(prev => prev.map(todo => todo.id === id ? { ...todo, task_title: title, task_text: text } : todo));
+      // ローカルで即時反映（priorityIdも含める）
+      setTodos(prev => prev.map(todo => {
+        if (todo.id === id) {
+          return { 
+            ...todo, 
+            task_title: title, 
+            task_text: text,
+            priority_id: priorityId || todo.priority_id
+          };
+        }
+        return todo;
+      }));
       
-      // supabaseで更新
-      const { error: updateError } = await supabase.from('todos').update({
+      // supabaseで更新（priorityIdも含める）
+      const updateData: { task_title: string; task_text: string; priority_id?: string } = {
         task_title: title,
         task_text: text,
-      }).eq('id', id);
+      };
+      
+      if (priorityId) {
+        updateData.priority_id = priorityId;
+      }
+      
+      const { error: updateError } = await supabase.from('todos').update(updateData).eq('id', id);
       
       if (updateError) {
         setError('編集に失敗しました');
@@ -87,10 +103,20 @@ export default function TodosPage() {
       // 成功時のトースト表示を追加
       showToast('ToDoを更新しました', 'success');
     } catch (err) {
-      // エラー時は元の値に戻す
-      if (editingTodo) {
-        setTodos(prev => prev.map(todo => todo.id === id ? { ...todo, task_title: editingTodo.task_title, task_text: editingTodo.task_text } : todo));
-      }
+              // エラー時は元の値に戻す
+        if (editingTodo) {
+          setTodos(prev => prev.map(todo => {
+            if (todo.id === id) {
+              return { 
+                ...todo, 
+                task_title: editingTodo.task_title, 
+                task_text: editingTodo.task_text,
+                priority_id: editingTodo.priority_id || todo.priority_id
+              };
+            }
+            return todo;
+          }));
+        }
       throw err;
     }
   };
@@ -163,8 +189,8 @@ export default function TodosPage() {
   };
 
   // 追加モーダル保存処理
-  const handleAddModalSave = async (title: string, text: string) => {
-    await addTodo(title, text, () => {
+  const handleAddModalSave = async (title: string, text: string, priorityId?: string) => {
+    await addTodo(title, text, priorityId, () => {
       // 追加成功時のコールバック
       showToast('ToDoを作成しました', 'success');
     });

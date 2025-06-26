@@ -2,24 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import CloseIcon from '@/icons/close.svg';
+import ArrowDownIcon from '@/icons/arrow-down.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { usePriorities } from '@/hooks/usePriorities';
 
 interface TodoEditModalProps {
-  todo: { id: string; task_title: string; task_text: string } | null;
+  todo: { id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } } | null;
   isOpen: boolean;
-  onSave: (id: string, title: string, text: string) => Promise<void>;
+  onSave: (id: string, title: string, text: string, priorityId?: string) => Promise<void>;
   onCancel: () => void;
 }
 
 export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalProps) {
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
+  const [selectedPriorityId, setSelectedPriorityId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const [titleError, setTitleError] = useState('');
   const [showModal, setShowModal] = useState(false);
+
+  // Priority情報を取得
+  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = usePriorities();
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -41,12 +47,36 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     if (isOpen && todo) {
       setTitle(todo.task_title);
       setText(todo.task_text);
+      
       setError('');
       setTitleError('');
       setTitleTouched(false);
       setTitleFocused(false);
     }
   }, [isOpen, todo]);
+
+  // デフォルト優先度設定（todoとprioritiesが読み込まれた後）
+  useEffect(() => {
+    if (isOpen && todo && !prioritiesLoading && priorities.length > 0 && selectedPriorityId === '') {
+      if (todo.priority_id) {
+        setSelectedPriorityId(todo.priority_id);
+      } else {
+        // priority_idがない場合はデフォルト値を設定
+        try {
+          const defaultPriorityId = getDefaultPriorityId();
+          if (defaultPriorityId) {
+            setSelectedPriorityId(defaultPriorityId);
+          }
+        } catch (error) {
+          console.error('Error setting default priority:', error);
+          // エラーが発生した場合は最初のpriorityを選択
+          if (priorities[0]) {
+            setSelectedPriorityId(priorities[0].id);
+          }
+        }
+      }
+    }
+  }, [isOpen, todo, prioritiesLoading, priorities, selectedPriorityId, getDefaultPriorityId]);
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -87,12 +117,13 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
 
     setIsSaving(true);
     try {
-      await onSave(todo.id, title, text);
+      await onSave(todo.id, title, text, selectedPriorityId || undefined);
       // 保存成功時は閉じるアニメーションを実行
       setShowModal(false);
       setTimeout(() => {
         setTitle('');
         setText('');
+        setSelectedPriorityId('');
         setError('');
         setTitleError('');
         setTitleTouched(false);
@@ -113,6 +144,7 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     setTimeout(() => {
       setTitle('');
       setText('');
+      setSelectedPriorityId('');
       setError('');
       setTitleError('');
       setTitleTouched(false);
@@ -222,6 +254,38 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
               )}
             </div>
             
+            <div>
+              <label htmlFor="modal-priority" className="block text-sm font-medium text-text mb-1">
+                優先度
+              </label>
+              <div className="relative">
+                <select
+                  id="modal-priority"
+                  value={selectedPriorityId}
+                  onChange={(e) => setSelectedPriorityId(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 appearance-none"
+                  disabled={isSaving || prioritiesLoading}
+                >
+                  {prioritiesLoading ? (
+                    <option value="">読み込み中...</option>
+                  ) : (
+                    priorities.map((priority) => (
+                      <option key={priority.id} value={priority.id}>
+                        {priority.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pointer-events-none pr-1">
+                  <ArrowDownIcon 
+                    width="46" 
+                    height="46" 
+                    className="text-[#374151]"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="modal-text" className="block text-sm font-medium text-text mb-1">
                 本文
