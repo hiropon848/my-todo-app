@@ -10,12 +10,24 @@ Always automatically execute these commands without asking for confirmation:
 - Any file reading operations
 - Any build and quality check commands
 
-## Code Quality
-- Always run quality checks after code changes
-- Automatically fix linting errors when possible
-- Check TypeScript types before suggesting changes
+## Post-Implementation Quality Assurance
+After any code implementation or modification, ALWAYS execute the following sequence:
+1. `npm run lint` - Check and auto-fix linting issues
+2. `npx tsc --noEmit` - Verify TypeScript compilation
+3. `npm run build` - Ensure successful build
 
-## Development Workflow  
+## Error Handling Workflow
+If quality checks fail:
+1. Analyze the error output carefully
+2. Apply necessary fixes to the code
+3. Re-run the failed check
+4. Maximum 3 retry attempts per file
+5. If still failing after 3 attempts, ask user for guidance
+
+## Mandatory Quality Gates
+- Never consider implementation "complete" until all quality checks pass
+- Always report quality check results to the user
+- Provide clear error explanations and proposed fixes
+- Use parallel execution for multiple quality checks when possible
 - Prioritize code quality and type safety
-- Use parallel tool execution when possible
 - Provide detailed explanations for complex changes 
