@@ -175,16 +175,20 @@ export default function TodosPage() {
 
   // ログアウト処理中の表示（最優先・他の条件を完全に無視）
   if (isLoggingOut) {
-    console.log('🚪 TodosPage showing logout LoadingScreen (priority)');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚪 TodosPage showing logout LoadingScreen (priority)');
+    }
     return <LoadingScreen message="ログアウト処理実行中..." />;
   }
 
   // ログアウト処理中でない場合のみ、他の条件を評価
   if (!isLoggingOut && (isLoading || !user || loading)) {
-    console.log('📺 PROBLEMATIC: TodosPage showing LoadingScreen', {
-      reason: isLoading ? 'isLoading' : !user ? 'no user' : 'loading',
-      isLoggingOut: false // 確実にfalse
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📺 PROBLEMATIC: TodosPage showing LoadingScreen', {
+        reason: isLoading ? 'isLoading' : !user ? 'no user' : 'loading',
+        isLoggingOut: false // 確実にfalse
+      });
+    }
     return <LoadingScreen />;
   }
 
