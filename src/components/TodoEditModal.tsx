@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import CloseIcon from '@/icons/close.svg';
-import ArrowDownIcon from '@/icons/arrow-down.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { usePriorities } from '@/hooks/usePriorities';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface TodoEditModalProps {
   todo: { id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } } | null;
@@ -258,32 +258,15 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
               <label htmlFor="modal-priority" className="block text-sm font-medium text-text mb-1">
                 優先度
               </label>
-              <div className="relative">
-                <select
-                  id="modal-priority"
-                  value={selectedPriorityId}
-                  onChange={(e) => setSelectedPriorityId(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 appearance-none"
-                  disabled={isSaving || prioritiesLoading}
-                >
-                  {prioritiesLoading ? (
-                    <option value="">読み込み中...</option>
-                  ) : (
-                    priorities.map((priority) => (
-                      <option key={priority.id} value={priority.id}>
-                        {priority.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pointer-events-none pr-1">
-                  <ArrowDownIcon 
-                    width="46" 
-                    height="46" 
-                    className="text-[#374151]"
-                  />
-                </div>
-              </div>
+              <CustomSelect
+                id="modal-priority"
+                value={selectedPriorityId}
+                onChange={setSelectedPriorityId}
+                options={priorities}
+                disabled={isSaving || prioritiesLoading}
+                loading={prioritiesLoading}
+                placeholder="優先度を選択"
+              />
             </div>
             
             <div>

@@ -286,16 +286,16 @@ export default function TodosPage() {
                     </button>
                     {/* ドロップダウンメニュー */}
                     {openMenuId === todo.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 min-w-[120px]">
                         <button
                           onClick={() => startEdit(todo)}
-                          className="w-full text-left px-4 py-2 text-sm text-text hover:bg-gray-100 flex items-center gap-2"
+                          className="w-full text-left px-3 py-2 text-base text-gray-900 hover:bg-gray-100 rounded hover:rounded mb-1 [&:last-child]:mb-0 flex items-center gap-2"
                         >
                           編集
                         </button>
                         <button
                           onClick={() => startDelete(todo)}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          className="w-full text-left px-3 py-2 text-base text-red-600 hover:bg-red-50 rounded hover:rounded mb-1 [&:last-child]:mb-0 flex items-center gap-2"
                         >
                           削除
                         </button>
