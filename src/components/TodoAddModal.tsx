@@ -6,6 +6,10 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { usePriorities } from '@/hooks/usePriorities';
 import { useTaskStatuses } from '@/hooks/useTaskStatuses';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { PriorityBadge } from '@/components/common/PriorityBadge';
+import { StatusBadge } from '@/components/common/StatusBadge';
+import { Priority } from '@/types/priority';
+import { TaskStatus } from '@/types/taskStatus';
 
 interface TodoAddModalProps {
   isOpen: boolean;
@@ -313,6 +317,18 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 disabled={isSaving || prioritiesLoading}
                 loading={prioritiesLoading}
                 placeholder="優先度を選択"
+                renderOption={(option) => (
+                  <PriorityBadge
+                    priority={option as Priority}
+                    size="md"
+                  />
+                )}
+                renderSelectedOption={(option) => (
+                  <PriorityBadge
+                    priority={option as Priority}
+                    size="md"
+                  />
+                )}
               />
             </div>
 
@@ -328,6 +344,18 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 disabled={isSaving || taskStatusesLoading}
                 loading={taskStatusesLoading}
                 placeholder="状態を選択"
+                renderOption={(option) => (
+                  <StatusBadge
+                    status={option as TaskStatus}
+                    size="md"
+                  />
+                )}
+                renderSelectedOption={(option) => (
+                  <StatusBadge
+                    status={option as TaskStatus}
+                    size="md"
+                  />
+                )}
               />
             </div>
 

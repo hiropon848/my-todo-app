@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import ArrowDownIcon from '@/icons/arrow-down.svg';
 
 interface Option {
   id: string;
   name: string;
+  color_code?: string;
 }
 
 interface CustomSelectProps {
@@ -15,6 +16,8 @@ interface CustomSelectProps {
   loading?: boolean;
   className?: string;
   placeholder?: string;
+  renderOption?: (option: Option) => ReactNode;
+  renderSelectedOption?: (option: Option) => ReactNode;
 }
 
 export function CustomSelect({
@@ -25,7 +28,9 @@ export function CustomSelect({
   disabled = false,
   loading = false,
   className = '',
-  placeholder = '選択してください'
+  placeholder = '選択してください',
+  renderOption,
+  renderSelectedOption
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
@@ -122,7 +127,9 @@ export function CustomSelect({
           className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-left appearance-none"
         >
           <span className="block truncate">
-            {loading ? '読み込み中...' : selectedOption ? selectedOption.name : placeholder}
+            {loading ? '読み込み中...' : selectedOption ? (
+              renderSelectedOption ? renderSelectedOption(selectedOption) : selectedOption.name
+            ) : placeholder}
           </span>
         </button>
         
@@ -159,7 +166,7 @@ export function CustomSelect({
                     : 'text-gray-900 hover:bg-gray-100 hover:rounded'
                 }`}
               >
-                {option.name}
+                {renderOption ? renderOption(option) : option.name}
               </button>
             ))}
           </div>

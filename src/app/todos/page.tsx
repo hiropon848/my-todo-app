@@ -15,6 +15,7 @@ import { Toast } from '@/components/common/Toast';
 import { useToast } from '@/hooks/useToast';
 import SubMenuIcon from '@/icons/menu-sub.svg';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
+import { StatusBadge } from '@/components/common/StatusBadge';
 
 export default function TodosPage() {
   const router = useRouter();
@@ -290,7 +291,8 @@ export default function TodosPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="font-bold text-lg text-text">{todo.task_title}</div>
-                      <PriorityBadge priority={todo.priority} size="sm" />
+                      <PriorityBadge priority={todo.priority} size="md" />
+                      <StatusBadge status={todo.status} size="md" />
                     </div>
                     <div className="text-text text-sm whitespace-pre-wrap">{todo.task_text}</div>
                   </div>
