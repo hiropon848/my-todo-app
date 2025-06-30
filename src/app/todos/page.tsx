@@ -238,7 +238,7 @@ export default function TodosPage() {
       {/* ヘッダー＋メイン全体ラッパー */}
       <div className="rounded-2xl shadow-2xl bg-white/15 border border-white/30 w-full max-w-2xl mx-auto my-6">
         <HeaderWithMenu userName={user.displayName} onLogout={handleLogout} title="あなたのToDo" onProfileClick={handleProfileClick} onAddClick={handleAddClick} />
-        <main className="px-6 pt-6 pb-8">
+        <main className="px-2 pt-6 pb-8">
           {/* エラーメッセージ */}
           {(error || todosError) && (
             <div className="mb-4 text-red-600 font-semibold text-sm text-center">
@@ -285,23 +285,13 @@ export default function TodosPage() {
               .map((todo) => (
                 <li
                   key={todo.id}
-                  className={`relative flex items-start gap-2 p-4 rounded-lg bg-white/60 border border-white/20 shadow transition-all`}
+                  className={`relative flex flex-col p-4 rounded-lg bg-white/60 border border-white/20 shadow transition-all`}
                 >
-                                     {/* チェックボックス機能削除済み（is_completedカラム削除により） */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="font-bold text-lg text-text">{todo.task_title}</div>
-                      <PriorityBadge priority={todo.priority} size="md" />
-                      <StatusBadge status={todo.status} size="md" />
-                    </div>
-                    <div className="text-text text-sm whitespace-pre-wrap">{todo.task_text}</div>
-                  </div>
-                  {/* メニューボタン */}
-                  <div className="relative flex-shrink-0">
+                  <div className="absolute top-3 right-3 z-10">
                     <button
                       onClick={(e) => toggleMenu(todo.id, e)}
-                      className="p-3 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50"
-                      disabled={false} // toggleLoading機能を無効化
+                      className="p-2 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50"
+                      disabled={false}
                     >
                       <SubMenuIcon 
                         width="22" 
@@ -309,7 +299,6 @@ export default function TodosPage() {
                         className="text-[#374151]"
                       />
                     </button>
-                    {/* ドロップダウンメニュー */}
                     {openMenuId === todo.id && (
                       <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 min-w-[120px]">
                         <button
@@ -326,6 +315,15 @@ export default function TodosPage() {
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-bold text-lg text-text leading-none pr-8">{todo.task_title}</h3>
+                    <div className="flex gap-2">
+                      <PriorityBadge priority={todo.priority} size="md" />
+                      <StatusBadge status={todo.status} size="md" />
+                    </div>
+                    <div className="text-text text-sm whitespace-pre-wrap">{todo.task_text}</div>
                   </div>
                 </li>
               ))}
