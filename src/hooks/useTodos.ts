@@ -7,7 +7,7 @@ export function useTodos(userId: string | null) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [toggleLoading, setToggleLoading] = useState<string | null>(null);
+  const [toggleLoading] = useState<string | null>(null); // setToggleLoading削除（toggleTodo機能削除により不要）
   const [addLoading, setAddLoading] = useState(false);
 
   // Priority情報を取得
@@ -25,7 +25,8 @@ export function useTodos(userId: string | null) {
         .from('todos')
         .select(`
           *,
-          priority:priorities(*)
+          priority:priorities(*),
+          status:task_statuses(*)
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
@@ -50,27 +51,14 @@ export function useTodos(userId: string | null) {
     setTodos(prev => prev.filter(todo => todo.id !== id));
   };
 
-  // ToDo完了トグルロジック
-  const toggleTodo = async (id: string, is_completed: boolean) => {
-    setError('');
-    setToggleLoading(id);
-    try {
-      const { error: updateError } = await supabase.from('todos').update({ is_completed: !is_completed }).eq('id', id);
-      if (updateError) {
-        setError('完了状態の更新に失敗しました');
-      } else {
-        setTodos(prev => prev.map(todo => todo.id === id ? { ...todo, is_completed: !is_completed } : todo));
-      }
-    } finally {
-      setToggleLoading(null);
-    }
-  };
+  // toggleTodo機能は削除済み（is_completedカラム削除により不要）
 
   // ToDo追加ロジック
   const addTodo = async (
     title: string, 
     text: string, 
     priorityId?: string,
+    statusId?: string,
     onSuccess?: (todo: Todo) => void
   ) => {
     setError('');
@@ -86,17 +74,34 @@ export function useTodos(userId: string | null) {
       return false;
     }
     
+    // statusIdが指定されていない場合はデフォルト状態（「未着手」）を使用
+    let finalStatusId = statusId;
+    if (!finalStatusId) {
+      const { data: defaultStatus } = await supabase
+        .from('task_statuses')
+        .select('id')
+        .eq('name', '未着手')
+        .single();
+
+      if (!defaultStatus) {
+        setError('デフォルト状態の取得に失敗しました');
+        return false;
+      }
+      finalStatusId = defaultStatus.id;
+    }
+    
     setAddLoading(true);
     try {
       const { data: inserted, error: insertError } = await supabase.from('todos').insert({
         user_id: userId,
         task_title: title,
         task_text: text,
-        is_completed: false,
+        status_id: finalStatusId,
         priority_id: finalPriorityId,
       }).select(`
         *,
-        priority:priorities(*)
+        priority:priorities(*),
+        status:task_statuses(*)
       `).single();
       
       if (insertError) {
@@ -119,18 +124,23 @@ export function useTodos(userId: string | null) {
     title: string,
     text: string,
     priorityId?: string,
+    statusId?: string,
     onSuccess?: (todo: Todo) => void
   ) => {
     setError('');
     try {
       // 1. Supabaseで更新実行
-      const updateData: { task_title: string; task_text: string; priority_id?: string } = {
+      const updateData: { task_title: string; task_text: string; priority_id?: string; status_id?: string } = {
         task_title: title,
         task_text: text,
       };
       
       if (priorityId) {
         updateData.priority_id = priorityId;
+      }
+      
+      if (statusId) {
+        updateData.status_id = statusId;
       }
       
       const { error: updateError } = await supabase.from('todos').update(updateData).eq('id', id);
@@ -140,10 +150,10 @@ export function useTodos(userId: string | null) {
         throw updateError;
       }
       
-      // 2. 更新成功後、最新データを取得（Priority情報含む）
+      // 2. 更新成功後、最新データを取得（Priority・Status情報含む）
       const { data: updatedTodo, error: fetchError } = await supabase
         .from('todos')
-        .select(`*, priority:priorities(*)`)
+        .select(`*, priority:priorities(*), status:task_statuses(*)`)
         .eq('id', id)
         .single();
       
@@ -172,7 +182,7 @@ export function useTodos(userId: string | null) {
     loading, 
     error, 
     deleteTodo, 
-    toggleTodo, 
+    // toggleTodo: 削除済み（is_completedカラム削除により不要）
     toggleLoading,
     addTodo,
     addLoading,

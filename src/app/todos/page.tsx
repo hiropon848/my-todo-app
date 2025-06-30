@@ -24,7 +24,18 @@ export default function TodosPage() {
   const [showCompletedLoading, setShowCompletedLoading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingTodo, setEditingTodo] = useState<{ id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } } | null>(null);
+  const [editingTodo, setEditingTodo] = useState<{
+    id: string;
+    task_title: string;
+    task_text: string;
+    priority_id?: string;
+    status_id?: string;
+    priority?: {
+      id: string;
+      name: string;
+      color_code: string;
+    };
+  } | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingTodo, setDeletingTodo] = useState<{ id: string; task_title: string } | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -36,11 +47,14 @@ export default function TodosPage() {
     loading, 
     error: todosError, 
     deleteTodo, 
-    toggleTodo, 
-    toggleLoading,
+    // toggleTodo: 削除済み（is_completedカラム削除により不要）
+    toggleLoading: _toggleLoading, // Phase 3で削除予定（メニューボタンで使用中）
     addTodo,
     updateTodo
   } = useTodos(user?.id || null);
+  
+  // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
+  void _toggleLoading;
   const { toast, showToast } = useToast();
 
   // 認証チェック（AuthContextで管理されているが、未認証時のリダイレクト処理）
@@ -70,17 +84,28 @@ export default function TodosPage() {
   };
 
   // 編集開始（モーダルを開く）
-  const startEdit = (todo: { id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } }) => {
+  const startEdit = (todo: {
+    id: string;
+    task_title: string;
+    task_text: string;
+    priority_id?: string;
+    status_id?: string;
+    priority?: {
+      id: string;
+      name: string;
+      color_code: string;
+    };
+  }) => {
     setEditingTodo(todo);
     setEditModalOpen(true);
     setOpenMenuId(null);
   };
 
   // モーダル保存処理
-  const handleModalSave = async (id: string, title: string, text: string, priorityId?: string) => {
+  const handleModalSave = async (id: string, title: string, text: string, priorityId?: string, statusId?: string) => {
     setError('');
     try {
-      await updateTodo(id, title, text, priorityId, () => {
+      await updateTodo(id, title, text, priorityId, statusId, () => {
         // 成功時のトースト表示
         showToast('ToDoを更新しました', 'success');
       });
@@ -158,8 +183,8 @@ export default function TodosPage() {
   };
 
   // 追加モーダル保存処理
-  const handleAddModalSave = async (title: string, text: string, priorityId?: string) => {
-    await addTodo(title, text, priorityId, () => {
+  const handleAddModalSave = async (title: string, text: string, priorityId?: string, statusId?: string) => {
+    await addTodo(title, text, priorityId, statusId, () => {
       // 追加成功時のコールバック
       showToast('ToDoを作成しました', 'success');
     });
@@ -233,15 +258,16 @@ export default function TodosPage() {
                   const checked = e.target.checked;
                   setShowCompletedLoading(true);
                   try {
-                    const { error: updateError } = await supabase
-                      .from('profiles')
-                      .update({ is_show_completed_todos: checked })
-                      .eq('id', user.id);
-                    if (updateError) {
-                      setError('表示設定の更新に失敗しました');
-                    } else {
+                    // 削除されたカラムの更新を無効化（Phase 3で機能ごと削除予定）
+                    // const { error: updateError } = await supabase
+                    //   .from('profiles')
+                    //   .update({ is_show_completed_todos: checked })
+                    //   .eq('id', user.id);
+                    // if (updateError) {
+                    //   setError('表示設定の更新に失敗しました');
+                    // } else {
                       updateUser({ showCompleted: checked });
-                    }
+                    // }
                   } finally {
                     setShowCompletedLoading(false);
                   }
@@ -255,19 +281,12 @@ export default function TodosPage() {
           {/* ToDoリスト */}
           <ul className="divide-y divide-white/20 space-y-2">
             {todos
-              .filter(todo => user.showCompleted || !todo.is_completed)
               .map((todo) => (
                 <li
                   key={todo.id}
-                  className={`relative flex items-start gap-2 p-4 rounded-lg bg-white/60 border border-white/20 shadow transition-all ${todo.is_completed ? 'opacity-60 line-through' : ''}`}
+                  className={`relative flex items-start gap-2 p-4 rounded-lg bg-white/60 border border-white/20 shadow transition-all`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={todo.is_completed}
-                    className="w-5 h-5 accent-primary mr-2 mt-1"
-                    onChange={() => toggleTodo(todo.id, todo.is_completed)}
-                    disabled={toggleLoading === todo.id}
-                  />
+                                     {/* チェックボックス機能削除済み（is_completedカラム削除により） */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="font-bold text-lg text-text">{todo.task_title}</div>
@@ -280,7 +299,7 @@ export default function TodosPage() {
                     <button
                       onClick={(e) => toggleMenu(todo.id, e)}
                       className="p-3 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50"
-                      disabled={toggleLoading === todo.id}
+                      disabled={false} // toggleLoading機能を無効化
                     >
                       <SubMenuIcon 
                         width="22" 

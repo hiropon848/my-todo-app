@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import CloseIcon from '@/icons/close.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { usePriorities } from '@/hooks/usePriorities';
+import { useTaskStatuses } from '@/hooks/useTaskStatuses';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface TodoAddModalProps {
   isOpen: boolean;
-  onSave: (title: string, text: string, priorityId?: string) => Promise<void>;
+  onSave: (title: string, text: string, priorityId?: string, statusId?: string) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -16,6 +17,7 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [selectedPriorityId, setSelectedPriorityId] = useState<string>('');
+  const [selectedStatusId, setSelectedStatusId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
@@ -26,6 +28,9 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
 
   // Priority情報を取得
   const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = usePriorities();
+
+  // TaskStatus情報を取得
+  const { taskStatuses, loading: taskStatusesLoading, getDefaultTaskStatusId } = useTaskStatuses();
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -75,6 +80,24 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
     }
   }, [isOpen, prioritiesLoading, priorities, selectedPriorityId, getDefaultPriorityId]);
 
+  // デフォルト状態設定（taskStatusesが読み込まれた後）
+  useEffect(() => {
+    if (isOpen && !taskStatusesLoading && taskStatuses.length > 0 && selectedStatusId === '') {
+      try {
+        const defaultStatusId = getDefaultTaskStatusId();
+        if (defaultStatusId) {
+          setSelectedStatusId(defaultStatusId);
+        }
+      } catch (error) {
+        console.error('Error setting default status:', error);
+        // エラーが発生した場合は最初のstatusを選択
+        if (taskStatuses[0]) {
+          setSelectedStatusId(taskStatuses[0].id);
+        }
+      }
+    }
+  }, [isOpen, taskStatusesLoading, taskStatuses, selectedStatusId, getDefaultTaskStatusId]);
+
   // タイトルのバリデーション
   const validateTitle = (value: string, blur = false) => {
     // フォーカスアウト時かつキャンセル操作中の場合はエラーをセットしない
@@ -112,6 +135,7 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
         setTitle('');
         setText('');
         setSelectedPriorityId('');
+        setSelectedStatusId('');
         setError('');
         setTitleError('');
         setTitleTouched(false);
@@ -144,13 +168,14 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
 
     setIsSaving(true);
     try {
-      await onSave(title, text, selectedPriorityId || undefined);
+      await onSave(title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
       // 保存成功時は閉じるアニメーションを実行
       setShowModal(false);
       setTimeout(() => {
         setTitle('');
         setText('');
         setSelectedPriorityId('');
+        setSelectedStatusId('');
         setError('');
         setTitleError('');
         setTitleTouched(false);
@@ -288,6 +313,21 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 disabled={isSaving || prioritiesLoading}
                 loading={prioritiesLoading}
                 placeholder="優先度を選択"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="add-modal-status" className="block text-sm font-medium text-text mb-1">
+                状態
+              </label>
+              <CustomSelect
+                id="add-modal-status"
+                value={selectedStatusId}
+                onChange={setSelectedStatusId}
+                options={taskStatuses}
+                disabled={isSaving || taskStatusesLoading}
+                loading={taskStatusesLoading}
+                placeholder="状態を選択"
               />
             </div>
 

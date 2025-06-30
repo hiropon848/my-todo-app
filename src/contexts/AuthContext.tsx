@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // プロフィール情報を取得
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('last_name, first_name, is_show_completed_todos')
+          .select('last_name, first_name')
           .eq('id', authUser.id)
           .single();
 
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastName: profile.last_name || '',
             firstName: profile.first_name || '',
             displayName: `${profile.last_name} ${profile.first_name} さん`,
-            showCompleted: profile.is_show_completed_todos ?? false
+            showCompleted: false // デフォルト値に設定（機能は後で削除予定）
           };
           setAuthState({ user: userData, status: 'authenticated' });
         }

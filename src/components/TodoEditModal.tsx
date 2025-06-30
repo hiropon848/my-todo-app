@@ -4,12 +4,24 @@ import { useState, useEffect } from 'react';
 import CloseIcon from '@/icons/close.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { usePriorities } from '@/hooks/usePriorities';
+import { useTaskStatuses } from '@/hooks/useTaskStatuses';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface TodoEditModalProps {
-  todo: { id: string; task_title: string; task_text: string; priority_id?: string; priority?: { id: string; name: string; color_code: string } } | null;
+  todo: {
+    id: string;
+    task_title: string;
+    task_text: string;
+    priority_id?: string;
+    status_id?: string;
+    priority?: {
+      id: string;
+      name: string;
+      color_code: string;
+    };
+  } | null;
   isOpen: boolean;
-  onSave: (id: string, title: string, text: string, priorityId?: string) => Promise<void>;
+  onSave: (id: string, title: string, text: string, priorityId?: string, statusId?: string) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -17,6 +29,7 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [selectedPriorityId, setSelectedPriorityId] = useState<string>('');
+  const [selectedStatusId, setSelectedStatusId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
@@ -24,29 +37,27 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   const [titleError, setTitleError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  // Priority情報を取得
   const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = usePriorities();
+  const { taskStatuses, loading: taskStatusesLoading, getDefaultTaskStatusId } = useTaskStatuses();
 
-  // 背景スクロール制御
   useBodyScrollLock(isOpen);
 
-  // モーダルのアニメーション制御（表示・非表示の両方にアニメーション）
   useEffect(() => {
     if (isOpen) {
-      // 少し遅らせてアニメーション開始
       const timer = setTimeout(() => setShowModal(true), 50);
       return () => clearTimeout(timer);
     } else {
-      // 閉じる時もアニメーション後に非表示
       setShowModal(false);
     }
   }, [isOpen]);
 
-  // todoの値をセット（アニメーションとは分離）
   useEffect(() => {
     if (isOpen && todo) {
       setTitle(todo.task_title);
       setText(todo.task_text);
+      if (todo.status_id) {
+        setSelectedStatusId(todo.status_id);
+      }
       
       setError('');
       setTitleError('');
@@ -55,13 +66,11 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     }
   }, [isOpen, todo]);
 
-  // デフォルト優先度設定（todoとprioritiesが読み込まれた後）
   useEffect(() => {
     if (isOpen && todo && !prioritiesLoading && priorities.length > 0 && selectedPriorityId === '') {
       if (todo.priority_id) {
         setSelectedPriorityId(todo.priority_id);
       } else {
-        // priority_idがない場合はデフォルト値を設定
         try {
           const defaultPriorityId = getDefaultPriorityId();
           if (defaultPriorityId) {
@@ -69,7 +78,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
           }
         } catch (error) {
           console.error('Error setting default priority:', error);
-          // エラーが発生した場合は最初のpriorityを選択
           if (priorities[0]) {
             setSelectedPriorityId(priorities[0].id);
           }
@@ -78,7 +86,26 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     }
   }, [isOpen, todo, prioritiesLoading, priorities, selectedPriorityId, getDefaultPriorityId]);
 
-  // ESCキーでモーダルを閉じる
+  useEffect(() => {
+    if (isOpen && todo && !taskStatusesLoading && taskStatuses.length > 0 && selectedStatusId === '') {
+      if (todo.status_id) {
+        setSelectedStatusId(todo.status_id);
+      } else {
+        try {
+          const defaultStatusId = getDefaultTaskStatusId();
+          if (defaultStatusId) {
+            setSelectedStatusId(defaultStatusId);
+          }
+        } catch (error) {
+          console.error('Error setting default status:', error);
+          if (taskStatuses[0]) {
+            setSelectedStatusId(taskStatuses[0].id);
+          }
+        }
+      }
+    }
+  }, [isOpen, todo, taskStatusesLoading, taskStatuses, selectedStatusId, getDefaultTaskStatusId]);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -92,7 +119,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     }
   }, [isOpen, onCancel]);
 
-  // タイトルのバリデーション
   const validateTitle = (value: string, blur = false) => {
     if (blur && value === '') {
       setTitleError('必須項目です');
@@ -101,7 +127,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     setTitleError('');
   };
 
-  // フォームの有効性判定
   const isFormValid = 
     title.trim() !== '' &&
     titleError === '';
@@ -117,13 +142,13 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
 
     setIsSaving(true);
     try {
-      await onSave(todo.id, title, text, selectedPriorityId || undefined);
-      // 保存成功時は閉じるアニメーションを実行
+      await onSave(todo.id, title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
       setShowModal(false);
       setTimeout(() => {
         setTitle('');
         setText('');
         setSelectedPriorityId('');
+        setSelectedStatusId('');
         setError('');
         setTitleError('');
         setTitleTouched(false);
@@ -138,22 +163,20 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   };
 
   const handleCancel = () => {
-    // 閉じるアニメーションを開始
     setShowModal(false);
-    // アニメーション完了後にモーダルを閉じる
     setTimeout(() => {
       setTitle('');
       setText('');
       setSelectedPriorityId('');
+      setSelectedStatusId('');
       setError('');
       setTitleError('');
       setTitleTouched(false);
       setTitleFocused(false);
       onCancel();
-    }, 300); // CSSのduration-300と同じ300ms
+    }, 300);
   };
 
-  // 背景クリックでモーダルを閉じる
   const handleBackgroundClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       handleCancel();
@@ -174,7 +197,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
       }}
       onClick={handleBackgroundClick}
     >
-      {/* モーダルウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
           showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -186,7 +208,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ヘッダー */}
         <div className="border-b border-white/30 rounded-t-2xl px-4 py-4">
           <div className="flex items-center justify-center relative">
             <h2 className="text-xl font-bold text-text">編集</h2>
@@ -205,16 +226,13 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
           </div>
         </div>
 
-        {/* コンテンツ */}
         <div className="p-6">
-          {/* エラーメッセージ */}
           {error && (
             <div className="mb-4 text-red-600 font-semibold text-sm text-center">
               {error}
             </div>
           )}
 
-          {/* 編集フォーム */}
           <div className="space-y-4">
             <div>
               <label htmlFor="modal-title" className="block text-sm font-medium text-text mb-1">
@@ -268,6 +286,21 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                 placeholder="優先度を選択"
               />
             </div>
+
+            <div>
+              <label htmlFor="modal-status" className="block text-sm font-medium text-text mb-1">
+                状態
+              </label>
+              <CustomSelect
+                id="modal-status"
+                value={selectedStatusId}
+                onChange={setSelectedStatusId}
+                options={taskStatuses}
+                disabled={isSaving || taskStatusesLoading}
+                loading={taskStatusesLoading}
+                placeholder="状態を選択"
+              />
+            </div>
             
             <div>
               <label htmlFor="modal-text" className="block text-sm font-medium text-text mb-1">
@@ -286,7 +319,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
           </div>
         </div>
 
-        {/* フッター */}
         <div className="px-6 py-4 border-t border-white/30 rounded-b-2xl">
           <div className="flex gap-3 justify-center">
             <button
