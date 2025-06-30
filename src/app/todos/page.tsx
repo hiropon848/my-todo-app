@@ -309,7 +309,7 @@ export default function TodosPage() {
                         </button>
                         <button
                           onClick={() => startDelete(todo)}
-                          className="w-full text-left px-3 py-2 text-base text-red-600 hover:bg-red-50 rounded hover:rounded mb-1 [&:last-child]:mb-0 flex items-center gap-2"
+                          className="w-full text-left px-3 py-2 text-base text-red-600 hover:bg-gray-100 rounded hover:rounded mb-1 [&:last-child]:mb-0 flex items-center gap-2"
                         >
                           削除
                         </button>

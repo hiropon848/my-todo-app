@@ -170,12 +170,12 @@ export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeCli
                   }, 50);
                 }, 300);
               }}
-              className="w-full text-left px-4 py-3 text-red-600 hover:bg-black/10 rounded-full transition-colors flex items-center gap-3"
+              className="w-full text-left px-4 py-3 text-text hover:bg-black/10 rounded-full transition-colors flex items-center gap-3"
             >
               <LogoutIcon 
                 width="22" 
                 height="22" 
-                className="text-current"
+                className="text-[#374151]"
                 style={{ strokeWidth: '3' }}
               />
               ログアウト

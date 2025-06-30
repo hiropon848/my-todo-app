@@ -386,7 +386,7 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 e.preventDefault(); // デフォルトのフォーカス移動を防ぐ
               }}
               onClick={handleCancel}
-              className="flex-1 px-4 py-2 bg-gray-300 text-text text-base font-bold rounded-[2rem] hover:bg-gray-400 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-500 text-white text-base font-bold rounded-[2rem] hover:bg-gray-600 transition-colors"
               disabled={isSaving}
             >
               キャンセル
