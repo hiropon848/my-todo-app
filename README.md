@@ -5,19 +5,40 @@ Next.js + TypeScript + Supabaseで構築されたモダンなTODOアプリケー
 ## ✨ 主な機能
 
 - **📱 レスポンシブデザイン**: モバイル・デスクトップ対応
-- **🔐 認証システム**: ログイン・新規登録・パスワードリセット
-- **✅ TODO管理**: 作成・編集・削除・完了切り替え
-- **🎨 ガラスモーフィズムUI**: モダンで美しいデザイン
+- **🔐 認証システム**: 
+  - ログイン・新規登録
+  - パスワードリセット
+  - パスワード変更
+  - プロフィール管理（姓名の編集）
+- **✅ TODO管理**: 
+  - 作成・編集・削除
+  - 優先度設定（高・中・低）
+  - 状態管理（未着手・進行中・完了）
+  - 完了済みTODOの表示/非表示切り替え
+- **🎨 モダンUI**: 
+  - ガラスモーフィズムデザイン
+  - アニメーション効果
+  - 統一されたモーダルデザイン
 - **🔔 通知システム**: 操作結果のトースト通知
-- **👤 プロフィール管理**: ユーザー情報の編集
 
 ## 🛠️ 技術スタック
 
-- **フロントエンド**: Next.js 15.3.3, TypeScript, TailwindCSS
-- **バックエンド**: Supabase (PostgreSQL, Auth, RLS)
-- **スタイリング**: TailwindCSS, ガラスモーフィズム
-- **状態管理**: React Hooks, Context API
-- **開発ツール**: ESLint, TypeScript
+- **フロントエンド**: 
+  - Next.js 15.3.3
+  - TypeScript
+  - TailwindCSS
+  - ガラスモーフィズムUI
+- **バックエンド**: 
+  - Supabase
+  - PostgreSQL
+  - 認証（Auth）
+  - 行レベルセキュリティ（RLS）
+- **状態管理**: 
+  - React Hooks
+  - Context API
+- **開発ツール**: 
+  - ESLint
+  - TypeScript
 
 ## 🚀 セットアップ
 
@@ -47,7 +68,17 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 \`\`\`
 
-### 4. 開発サーバーの起動
+### 4. Supabaseのセットアップ
+
+1. [Supabase](https://supabase.com)でプロジェクトを作成
+2. SQLエディタで`database_migration.sql`の内容を実行：
+   - prioritiesテーブルの作成と初期データ投入
+   - task_statusesテーブルの作成と初期データ投入
+   - todosテーブルの外部キー追加とデフォルト値設定
+   - マスタデータテーブル（priorities, task_statuses）のRLS設定
+3. ⚠️ 注意: todosテーブルのRLS設定が別途必要です
+
+### 5. 開発サーバーの起動
 
 \`\`\`bash
 npm run dev
@@ -64,15 +95,21 @@ pnpm dev
 \`\`\`
 src/
 ├── app/                 # Next.js App Router
-├── components/          # Reactコンポーネント
-│   ├── auth/           # 認証関連
-│   ├── common/         # 共通コンポーネント
+│   ├── complete/       # 完了済みTODO
+│   ├── login/         # ログイン
+│   ├── profile/       # プロフィール
+│   ├── reset-password/ # パスワードリセット
+│   ├── signup/        # 新規登録
+│   └── todos/         # TODO一覧
+├── components/         # Reactコンポーネント
+│   ├── auth/          # 認証関連
+│   ├── common/        # 共通コンポーネント
 │   └── TodoAddModal.tsx # TODO追加モーダル
-├── contexts/           # React Context
-├── hooks/              # カスタムフック
-├── icons/              # SVGアイコン
-├── lib/                # ライブラリ設定
-└── types/              # TypeScript型定義
+├── contexts/          # React Context
+├── hooks/             # カスタムフック
+├── icons/             # SVGアイコン
+├── lib/               # ライブラリ設定
+└── types/             # TypeScript型定義
 \`\`\`
 
 ## 🎯 主要機能の使い方
@@ -80,13 +117,17 @@ src/
 ### TODO管理
 - **➕ 新規作成**: ヘッダーの「+」ボタンでモーダル表示
 - **✏️ 編集**: TODOアイテムのメニューから編集
-- **🗑️ 削除**: TODOアイテムのメニューから削除
+- **🗑️ 削除**: TODOアイテムのメニューから削除（確認モーダル付き）
 - **✅ 完了切り替え**: チェックボックスで完了状態を切り替え
+- **🔄 状態管理**: 未着手・進行中・完了の3段階で管理
+- **⭐ 優先度**: 高・中・低の3段階で設定可能
 
-### 認証
-- **🔑 ログイン**: メールアドレスとパスワード
-- **📝 新規登録**: アカウント作成
-- **🔄 パスワードリセット**: メール経由でリセット
+### アカウント管理
+- **🔑 ログイン**: メールアドレスとパスワードでログイン
+- **📝 新規登録**: メールアドレス、パスワード、姓名で登録
+- **🔄 パスワードリセット**: メール経由でパスワードをリセット
+- **👤 プロフィール編集**: 姓名の変更が可能
+- **🔐 パスワード変更**: 現在のパスワードを確認後に変更可能
 
 ## 🧪 開発コマンド
 
