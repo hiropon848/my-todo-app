@@ -1,5 +1,5 @@
 -- 新しいテーブル構造への移行（Version 2）
--- 実行順序: 1 → 2 → 3 → 4 → 5 の順番で実行してください
+-- 実行順序: 1 → 2 → 3 → 4 → 5 → 6 の順番で実行してください
 
 -- 1. 新しいテーブルの作成
 CREATE TABLE todo_priorities (
@@ -44,7 +44,20 @@ RENAME COLUMN priority_id TO todo_priority_id;
 ALTER TABLE todos 
 RENAME COLUMN status_id TO todo_status_id;
 
--- 4. 外部キー制約の更新
+-- 4. RLSポリシーの設定
+-- todo_prioritiesテーブルのRLS設定
+ALTER TABLE todo_priorities ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Everyone can read todo_priorities" ON todo_priorities
+  FOR SELECT USING (is_active = true);
+
+-- todo_statusesテーブルのRLS設定
+ALTER TABLE todo_statuses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Everyone can read todo_statuses" ON todo_statuses
+  FOR SELECT USING (is_active = true);
+
+-- 5. 外部キー制約の更新
 -- 一時的に外部キー制約を削除
 ALTER TABLE todos 
 DROP CONSTRAINT todos_priority_id_fkey,
@@ -61,6 +74,6 @@ ADD CONSTRAINT todos_todo_status_id_fkey
 FOREIGN KEY (todo_status_id) 
 REFERENCES todo_statuses(id);
 
--- 5. 古いテーブルの削除（すべての確認が完了後）
+-- 6. 古いテーブルの削除（すべての確認が完了後）
 DROP TABLE priorities;
 DROP TABLE task_statuses; 
