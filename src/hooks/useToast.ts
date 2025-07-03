@@ -19,19 +19,19 @@ export function useToast() {
     // 既存のタイマーをクリア
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
     
+    // 新しいトーストを表示
     setToast({ message, type, isOpen: true });
     
-    // 2秒表示後、0.6秒でフェードアウト
+    // 2秒後にフェードアウト開始
     timeoutRef.current = setTimeout(() => {
       setToast(prev => ({ ...prev, isOpen: false }));
-      timeoutRef.current = null;
-    }, 2600);
+    }, 2000);
   }, []);
 
   const hideToast = useCallback(() => {
-    // タイマーをクリア
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;

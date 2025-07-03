@@ -3,21 +3,21 @@
 import { useState, useEffect } from 'react';
 import CloseIcon from '@/icons/close.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
-import { usePriorities } from '@/hooks/usePriorities';
-import { useTaskStatuses } from '@/hooks/useTaskStatuses';
+import { useTodoPriorities } from '@/hooks/useTodoPriorities';
+import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
-import { Priority } from '@/types/priority';
-import { TaskStatus } from '@/types/taskStatus';
+import { TodoPriority } from '@/types/todoPriority';
+import { TodoStatus } from '@/types/todoStatus';
 
 interface TodoEditModalProps {
   todo: {
     id: string;
-    task_title: string;
-    task_text: string;
-    priority_id?: string;
-    status_id?: string;
+    todo_title: string;
+    todo_text: string;
+    todo_priority_id?: string;
+    todo_status_id?: string;
     priority?: {
       id: string;
       name: string;
@@ -25,7 +25,7 @@ interface TodoEditModalProps {
     };
   } | null;
   isOpen: boolean;
-  onSave: (id: string, title: string, text: string, priorityId?: string, statusId?: string) => Promise<void>;
+  onSave: (id: string, title: string, text: string, priorityId?: string, statusId?: string) => Promise<boolean>;
   onCancel: () => void;
 }
 
@@ -35,14 +35,13 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   const [selectedPriorityId, setSelectedPriorityId] = useState<string>('');
   const [selectedStatusId, setSelectedStatusId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const [titleError, setTitleError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = usePriorities();
-  const { taskStatuses, loading: taskStatusesLoading, getDefaultTaskStatusId } = useTaskStatuses();
+  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
+  const { todoStatuses, loading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
 
   useBodyScrollLock(isOpen);
 
@@ -57,13 +56,12 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
 
   useEffect(() => {
     if (isOpen && todo) {
-      setTitle(todo.task_title);
-      setText(todo.task_text);
-      if (todo.status_id) {
-        setSelectedStatusId(todo.status_id);
+      setTitle(todo.todo_title);
+      setText(todo.todo_text);
+      if (todo.todo_status_id) {
+        setSelectedStatusId(todo.todo_status_id);
       }
       
-      setError('');
       setTitleError('');
       setTitleTouched(false);
       setTitleFocused(false);
@@ -72,8 +70,8 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
 
   useEffect(() => {
     if (isOpen && todo && !prioritiesLoading && priorities.length > 0 && selectedPriorityId === '') {
-      if (todo.priority_id) {
-        setSelectedPriorityId(todo.priority_id);
+      if (todo.todo_priority_id) {
+        setSelectedPriorityId(todo.todo_priority_id);
       } else {
         try {
           const defaultPriorityId = getDefaultPriorityId();
@@ -91,24 +89,24 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   }, [isOpen, todo, prioritiesLoading, priorities, selectedPriorityId, getDefaultPriorityId]);
 
   useEffect(() => {
-    if (isOpen && todo && !taskStatusesLoading && taskStatuses.length > 0 && selectedStatusId === '') {
-      if (todo.status_id) {
-        setSelectedStatusId(todo.status_id);
+    if (isOpen && todo && !todoStatusesLoading && todoStatuses.length > 0 && selectedStatusId === '') {
+      if (todo.todo_status_id) {
+        setSelectedStatusId(todo.todo_status_id);
       } else {
         try {
-          const defaultStatusId = getDefaultTaskStatusId();
+          const defaultStatusId = getDefaultTodoStatusId();
           if (defaultStatusId) {
             setSelectedStatusId(defaultStatusId);
           }
         } catch (error) {
           console.error('Error setting default status:', error);
-          if (taskStatuses[0]) {
-            setSelectedStatusId(taskStatuses[0].id);
+          if (todoStatuses[0]) {
+            setSelectedStatusId(todoStatuses[0].id);
           }
         }
       }
     }
-  }, [isOpen, todo, taskStatusesLoading, taskStatuses, selectedStatusId, getDefaultTaskStatusId]);
+  }, [isOpen, todo, todoStatusesLoading, todoStatuses, selectedStatusId, getDefaultTodoStatusId]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -138,7 +136,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   const handleSave = async () => {
     if (!todo) return;
     
-    setError('');
     if (!title.trim()) {
       setTitleError('必須項目です');
       return;
@@ -146,21 +143,20 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
 
     setIsSaving(true);
     try {
-      await onSave(todo.id, title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
-      setShowModal(false);
-      setTimeout(() => {
-        setTitle('');
-        setText('');
-        setSelectedPriorityId('');
-        setSelectedStatusId('');
-        setError('');
-        setTitleError('');
-        setTitleTouched(false);
-        setTitleFocused(false);
-        onCancel();
-      }, 300);
-    } catch {
-      setError('編集に失敗しました');
+      const success = await onSave(todo.id, title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
+      if (success) {
+        setShowModal(false);
+        setTimeout(() => {
+          setTitle('');
+          setText('');
+          setSelectedPriorityId('');
+          setSelectedStatusId('');
+          setTitleError('');
+          setTitleTouched(false);
+          setTitleFocused(false);
+          onCancel();
+        }, 300);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -173,7 +169,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
       setText('');
       setSelectedPriorityId('');
       setSelectedStatusId('');
-      setError('');
       setTitleError('');
       setTitleTouched(false);
       setTitleFocused(false);
@@ -231,12 +226,6 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
         </div>
 
         <div className="p-6">
-          {error && (
-            <div className="mb-4 text-red-600 font-semibold text-sm text-center">
-              {error}
-            </div>
-          )}
-
           <div className="space-y-4">
             <div>
               <label htmlFor="modal-title" className="block text-sm font-medium text-text mb-1">
@@ -290,13 +279,13 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                 placeholder="優先度を選択"
                 renderOption={(option) => (
                   <PriorityBadge
-                    priority={option as Priority}
+                    priority={option as TodoPriority}
                     size="md"
                   />
                 )}
                 renderSelectedOption={(option) => (
                   <PriorityBadge
-                    priority={option as Priority}
+                    priority={option as TodoPriority}
                     size="md"
                   />
                 )}
@@ -311,19 +300,19 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                 id="modal-status"
                 value={selectedStatusId}
                 onChange={setSelectedStatusId}
-                options={taskStatuses}
-                disabled={isSaving || taskStatusesLoading}
-                loading={taskStatusesLoading}
+                options={todoStatuses}
+                disabled={isSaving || todoStatusesLoading}
+                loading={todoStatusesLoading}
                 placeholder="状態を選択"
                 renderOption={(option) => (
                   <StatusBadge
-                    status={option as TaskStatus}
+                    status={option as TodoStatus}
                     size="md"
                   />
                 )}
                 renderSelectedOption={(option) => (
                   <StatusBadge
-                    status={option as TaskStatus}
+                    status={option as TodoStatus}
                     size="md"
                   />
                 )}

@@ -13,20 +13,25 @@ interface ToastProps {
 
 export function Toast({ message, type, isOpen, onClose }: ToastProps) {
   const [toastFade, setToastFade] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setToastFade(false);
-      // 2秒後にフェードアウト開始
+      // フェードイン開始
+      setShowToast(true);
+      // フェードアウト開始のタイミングを制御
       const fadeTimer = setTimeout(() => {
         setToastFade(true);
         // フェードアウト完了後にonClose実行
         if (onClose) {
-          setTimeout(() => onClose(), 600);
+          setTimeout(onClose, 600);
         }
       }, 2000);
 
       return () => clearTimeout(fadeTimer);
+    } else {
+      setShowToast(false);
     }
   }, [isOpen, onClose]);
 
@@ -54,7 +59,9 @@ export function Toast({ message, type, isOpen, onClose }: ToastProps) {
 
   return (
     <div
-      className={`fixed left-0 right-0 bottom-0 z-[60] w-full px-0 py-4 flex items-center justify-center transition-opacity duration-600 ${toastFade ? 'opacity-0' : 'opacity-100'}`}
+      className={`fixed left-0 right-0 bottom-0 z-[100] w-full px-0 py-4 flex items-center justify-center transition-all duration-300 ${
+        showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      } ${toastFade ? 'opacity-0' : ''}`}
       style={{
         background: currentStyle.background,
         backdropFilter: 'blur(12px)',

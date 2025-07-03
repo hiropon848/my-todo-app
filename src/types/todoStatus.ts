@@ -1,4 +1,4 @@
-export interface TaskStatus {
+export interface TodoStatus {
   id: string;
   name: string;
   display_order: number;

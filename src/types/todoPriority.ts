@@ -1,4 +1,4 @@
-export interface Priority {
+export interface TodoPriority {
   id: string;
   name: string;
   display_order: number;

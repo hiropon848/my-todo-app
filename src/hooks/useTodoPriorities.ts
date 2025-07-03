@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Priority } from '@/types/priority';
+import { TodoPriority } from '@/types/todoPriority';
 
-export function usePriorities() {
-  const [priorities, setPriorities] = useState<Priority[]>([]);
+export function useTodoPriorities() {
+  const [priorities, setPriorities] = useState<TodoPriority[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,7 +16,7 @@ export function usePriorities() {
     setError('');
     try {
       const { data: prioritiesData, error: prioritiesError } = await supabase
-        .from('priorities')
+        .from('todo_priorities')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
@@ -36,12 +36,12 @@ export function usePriorities() {
   };
 
   // 優先度IDから優先度オブジェクトを取得
-  const getPriorityById = (id: string): Priority | undefined => {
+  const getPriorityById = (id: string): TodoPriority | undefined => {
     return priorities.find(priority => priority.id === id);
   };
 
   // 優先度名から優先度オブジェクトを取得
-  const getPriorityByName = (name: string): Priority | undefined => {
+  const getPriorityByName = (name: string): TodoPriority | undefined => {
     return priorities.find(priority => priority.name === name);
   };
 

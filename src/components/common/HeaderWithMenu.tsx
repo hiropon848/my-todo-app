@@ -2,30 +2,33 @@
 
 import React, { useState } from 'react';
 import { AppHeader } from './AppHeader';
-import { MenuModal } from './MenuModal';
-import { ConfirmModal } from './ConfirmModal';
-import { PasswordModal } from './PasswordModal';
+import { MenuModal } from '@/components/common/MenuModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
+import { PasswordModal } from '@/components/common/PasswordModal';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { useToast } from '@/hooks/useToast';
 import { Toast } from './Toast';
-
+import MainMenuIcon from '@/icons/menu-main.svg';
 
 interface HeaderWithMenuProps {
-  userName: string;
-  onLogout: () => void;
   title: string;
+  user?: {
+    lastName: string;
+    firstName: string;
+  } | null;
   onProfileClick?: () => void;
+  onLogoutClick?: () => void;
   onAddClick?: () => void;
 }
 
-export const HeaderWithMenu: React.FC<HeaderWithMenuProps> = ({ userName, onLogout, title, onProfileClick, onAddClick }) => {
+export function HeaderWithMenu({ title, user, onProfileClick, onLogoutClick, onAddClick }: HeaderWithMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // カスタムフック
-  const { changePassword, error: passwordError } = usePasswordChange();
-  const { toast, showToast } = useToast();
+  const { changePassword } = usePasswordChange();
+  const { showToast } = useToast();
 
   const handleMenuOpen = () => {
     setIsMenuOpen(true);
@@ -50,11 +53,16 @@ export const HeaderWithMenu: React.FC<HeaderWithMenuProps> = ({ userName, onLogo
     const success = await changePassword(currentPassword, newPassword);
     
     if (success) {
+      // モーダルを閉じて300ms後にトースト表示
       setIsPasswordModalOpen(false);
-      showToast('パスワードを変更しました', 'success');
+      setTimeout(() => {
+        showToast('パスワードを変更しました', 'success');
+      }, 300);
     } else {
-      showToast(passwordError || 'パスワード変更に失敗しました', 'error');
+      showToast('パスワード変更に失敗しました', 'error');
     }
+    
+    return success;
   };
 
   // パスワード変更モーダルキャンセル処理
@@ -69,7 +77,7 @@ export const HeaderWithMenu: React.FC<HeaderWithMenuProps> = ({ userName, onLogo
 
   // ログアウト確認処理
   const handleLogoutConfirm = async () => {
-    await onLogout();
+    await onLogoutClick?.();
   };
 
   // ログアウト確認キャンセル処理
@@ -77,17 +85,19 @@ export const HeaderWithMenu: React.FC<HeaderWithMenuProps> = ({ userName, onLogo
     setIsLogoutConfirmOpen(false);
   };
 
+  const userName = user ? `${user.lastName} ${user.firstName}` : '';
+
   return (
     <>
       <AppHeader
-        userName={userName}
-        onLogout={onLogout}
         title={title}
+        userName={userName}
+        onLogout={onLogoutClick || (() => {})}
         onMenuOpen={handleMenuOpen}
         onAddClick={onAddClick}
       />
-      
-      {/* メニューモーダル（画面全体に表示） */}
+
+      {/* メニューモーダル */}
       <MenuModal
         isOpen={isMenuOpen}
         onClose={handleMenuClose}
@@ -107,20 +117,12 @@ export const HeaderWithMenu: React.FC<HeaderWithMenuProps> = ({ userName, onLogo
       <ConfirmModal
         isOpen={isLogoutConfirmOpen}
         title="ログアウト"
-        message="ログアウトします。<br>よろしいですか？"
-        confirmText="OK"
-        cancelText="キャンセル"
+        message="ログアウトしますか？"
+        confirmText="ログアウト"
+        variant="danger"
         onConfirm={handleLogoutConfirm}
         onCancel={handleLogoutConfirmCancel}
-        variant="danger"
-      />
-
-      {/* トースト通知 */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isOpen={toast.isOpen}
       />
     </>
   );
-}; 
+} 

@@ -71,11 +71,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ### 4. Supabaseのセットアップ
 
 1. [Supabase](https://supabase.com)でプロジェクトを作成
-2. SQLエディタで`database_migration.sql`の内容を実行：
-   - prioritiesテーブルの作成と初期データ投入
-   - task_statusesテーブルの作成と初期データ投入
-   - todosテーブルの外部キー追加とデフォルト値設定
-   - マスタデータテーブル（priorities, task_statuses）のRLS設定
+2. SQLエディタで`src/db/database_migration.sql`の内容を実行：
+   - todo_prioritiesテーブルの作成と初期データ投入
+   - todo_statusesテーブルの作成と初期データ投入
+   - todosテーブルのカラム名変更とデータ移行
+   - マスタデータテーブル（todo_priorities, todo_statuses）のRLS設定
 3. ⚠️ 注意: todosテーブルのRLS設定が別途必要です
 
 ### 5. 開発サーバーの起動
@@ -180,7 +180,7 @@ npx tsc --noEmit
 ### 状態管理
 TODOの状態は以下の3段階で管理されます：
 1. 未着手：新規作成時のデフォルト状態
-2. 進行中：作業開始時の状態
+2. 処理中：作業開始時の状態
 3. 完了：作業完了時の状態
 
 各状態は編集モーダルから変更可能で、TODOの進捗に応じて適切な状態を選択できます。

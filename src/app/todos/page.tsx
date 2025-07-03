@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/useToast';
 import SubMenuIcon from '@/icons/menu-sub.svg';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function TodosPage() {
   const router = useRouter();
@@ -24,39 +25,43 @@ export default function TodosPage() {
   const [error, setError] = useState('');
   const [showCompletedLoading, setShowCompletedLoading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [showTodoEditModal, setShowTodoEditModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<{
     id: string;
-    task_title: string;
-    task_text: string;
-    priority_id?: string;
-    status_id?: string;
+    todo_title: string;
+    todo_text: string;
+    todo_priority_id?: string;
+    todo_status_id?: string;
     priority?: {
       id: string;
       name: string;
       color_code: string;
     };
   } | null>(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deletingTodo, setDeletingTodo] = useState<{ id: string; task_title: string } | null>(null);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [showTodoDeleteModal, setShowTodoDeleteModal] = useState(false);
+  const [deletingTodo, setDeletingTodo] = useState<{ id: string; todo_title: string } | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showTodoAddModal, setShowTodoAddModal] = useState(false);
 
   // useTodosカスタムフック
   const { 
     todos, 
-    loading, 
+    isLoading: loading, 
     error: todosError, 
     deleteTodo, 
-    // toggleTodo: 削除済み（is_completedカラム削除により不要）
-    toggleLoading: _toggleLoading, // Phase 3で削除予定（メニューボタンで使用中）
+    isToggleLoading: _isToggleLoading,
     addTodo,
-    updateTodo
+    updateTodo,
+    isAddTodoLoading,
+    isUpdateTodoLoading,
+    isDeleteTodoLoading
   } = useTodos(user?.id || null);
   
   // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
-  void _toggleLoading;
-  const { toast, showToast } = useToast();
+  void _isToggleLoading;
+  const { toast, showToast, hideToast } = useToast();
+
+  const { updateProfile } = useProfile();
 
   // 認証チェック（AuthContextで管理されているが、未認証時のリダイレクト処理）
   useEffect(() => {
@@ -76,8 +81,6 @@ export default function TodosPage() {
     }
   }, [openMenuId]);
 
-
-
   // メニューの開閉制御
   const toggleMenu = (todoId: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -87,10 +90,10 @@ export default function TodosPage() {
   // 編集開始（モーダルを開く）
   const startEdit = (todo: {
     id: string;
-    task_title: string;
-    task_text: string;
-    priority_id?: string;
-    status_id?: string;
+    todo_title: string;
+    todo_text: string;
+    todo_priority_id?: string;
+    todo_status_id?: string;
     priority?: {
       id: string;
       name: string;
@@ -98,7 +101,7 @@ export default function TodosPage() {
     };
   }) => {
     setEditingTodo(todo);
-    setEditModalOpen(true);
+    setShowTodoEditModal(true);
     setOpenMenuId(null);
   };
 
@@ -106,26 +109,33 @@ export default function TodosPage() {
   const handleModalSave = async (id: string, title: string, text: string, priorityId?: string, statusId?: string) => {
     setError('');
     try {
-      await updateTodo(id, title, text, priorityId, statusId, () => {
-        // 成功時のトースト表示
-        showToast('ToDoを更新しました', 'success');
-      });
+      const success = await updateTodo(id, title, text, priorityId, statusId);
+      if (success) {
+        setShowTodoEditModal(false);
+        // モーダルのアニメーション完了後にトースト表示
+        setTimeout(() => {
+          showToast('ToDoを更新しました', 'success');
+        }, 300);
+        return true;
+      }
+      showToast('更新に失敗しました', 'error');
+      return false;
     } catch (err) {
-      // エラーハンドリング（useTodosでエラーメッセージは設定済み）
-      throw err;
+      showToast('更新に失敗しました', 'error');
+      return false;
     }
   };
 
   // モーダルキャンセル処理
   const handleModalCancel = () => {
-    setEditModalOpen(false);
+    setShowTodoEditModal(false);
     setEditingTodo(null);
   };
 
   // 削除開始（確認モーダルを開く）
-  const startDelete = (todo: { id: string; task_title: string }) => {
+  const startDelete = (todo: { id: string; todo_title: string }) => {
     setDeletingTodo(todo);
-    setDeleteModalOpen(true);
+    setShowTodoDeleteModal(true);
     setOpenMenuId(null);
   };
 
@@ -135,7 +145,11 @@ export default function TodosPage() {
     
     try {
       await deleteTodo(deletingTodo.id);
-      showToast('ToDoを削除しました', 'success');
+      setShowTodoDeleteModal(false);
+      // モーダルのアニメーション完了後にトースト表示
+      setTimeout(() => {
+        showToast('ToDoを削除しました', 'success');
+      }, 300);
     } catch {
       showToast('削除に失敗しました', 'error');
     }
@@ -143,57 +157,77 @@ export default function TodosPage() {
 
   // 削除キャンセル処理
   const handleDeleteCancel = () => {
-    setDeleteModalOpen(false);
+    setShowTodoDeleteModal(false);
     setDeletingTodo(null);
   };
 
   // プロフィール編集開始
   const handleProfileClick = () => {
-    setProfileModalOpen(true);
+    setShowProfileModal(true);
   };
 
   // プロフィール保存処理
   const handleProfileSave = async (lastName: string, firstName: string) => {
-    if (!user) return;
+    if (!user) return false;
     
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ 
-        last_name: lastName, 
-        first_name: firstName 
-      })
-      .eq('id', user.id);
-    
-    if (updateError) {
-      throw new Error('プロフィールの更新に失敗しました');
+    try {
+      const success = await updateProfile(user.id, lastName, firstName);
+      if (!success) {
+        showToast('プロフィールの更新に失敗しました', 'error');
+        return false;
+      }
+      
+      updateUser({ lastName, firstName });
+      setShowProfileModal(false);
+      // モーダルのアニメーション完了後にトースト表示
+      setTimeout(() => {
+        showToast('プロフィールを更新しました', 'success');
+      }, 300);
+      return true;
+    } catch (error) {
+      showToast('プロフィールの更新に失敗しました', 'error');
+      return false;
     }
-    
-    // Context内のユーザー情報を更新
-    updateUser({ lastName, firstName });
-    showToast('プロフィールを更新しました', 'success');
   };
 
   // プロフィールキャンセル処理
   const handleProfileCancel = () => {
-    setProfileModalOpen(false);
+    setShowProfileModal(false);
   };
 
   // 追加モーダル開始
   const handleAddClick = () => {
-    setAddModalOpen(true);
+    setShowTodoAddModal(true);
   };
 
   // 追加モーダル保存処理
   const handleAddModalSave = async (title: string, text: string, priorityId?: string, statusId?: string) => {
-    await addTodo(title, text, priorityId, statusId, () => {
-      // 追加成功時のコールバック
-      showToast('ToDoを作成しました', 'success');
-    });
+    console.log('🚀 handleAddModalSave called:', { title, text, priorityId, statusId });
+    try {
+      const success = await addTodo(title, text, priorityId, statusId);
+      console.log('📊 addTodo result:', success);
+      if (success) {
+        setShowTodoAddModal(false);
+        // モーダルのアニメーション完了後にトースト表示
+        setTimeout(() => {
+          console.log('✨ Showing success toast');
+          showToast('ToDoを作成しました', 'success');
+        }, 300);
+        return true;
+      }
+      console.log('❌ Showing error toast');
+      showToast('作成に失敗しました', 'error');
+      return false;
+    } catch (error) {
+      console.error('❌ Unexpected error in handleAddModalSave:', error);
+      showToast('作成に失敗しました', 'error');
+      return false;
+    }
   };
 
   // 追加モーダルキャンセル処理
   const handleAddModalCancel = () => {
-    setAddModalOpen(false);
+    setShowTodoAddModal(false);
   };
 
   // ログアウト処理（Contextのlogout関数を使用）
@@ -237,7 +271,13 @@ export default function TodosPage() {
       />
       {/* ヘッダー＋メイン全体ラッパー */}
       <div className="rounded-2xl shadow-2xl bg-white/15 border border-white/30 w-full max-w-2xl mx-auto my-6">
-        <HeaderWithMenu userName={user.displayName} onLogout={handleLogout} title="あなたのToDo" onProfileClick={handleProfileClick} onAddClick={handleAddClick} />
+        <HeaderWithMenu
+          title="あなたのToDo"
+          user={user ? { lastName: user.lastName, firstName: user.firstName } : null}
+          onProfileClick={handleProfileClick}
+          onLogoutClick={handleLogout}
+          onAddClick={handleAddClick}
+        />
         <main className="px-2 pt-6 pb-8">
           {/* エラーメッセージ */}
           {(error || todosError) && (
@@ -280,60 +320,56 @@ export default function TodosPage() {
             </div>
           </div>
           {/* ToDoリスト */}
-          <ul className="divide-y divide-white/20 space-y-2">
-            {todos
-              .map((todo) => (
-                <li
-                  key={todo.id}
-                  className={`relative flex flex-col p-4 rounded-lg bg-white/60 border border-white/20 shadow transition-all`}
+          <div className="space-y-4">
+            {todos.map(todo => (
+              <div
+                key={todo.id}
+                className="bg-white/30 rounded-xl p-4 border border-white/20 shadow relative group"
+              >
+                {/* メニューボタン */}
+                <button
+                  onClick={(e) => toggleMenu(todo.id, e)}
+                  className="absolute top-4 right-4 p-2 hover:bg-black/10 rounded-full transition-colors"
                 >
-                  <div className="absolute top-3 right-3 z-10">
-                    <button
-                      onClick={(e) => toggleMenu(todo.id, e)}
-                      className="p-2 rounded-full hover:bg-black/10 transition-colors disabled:opacity-50"
-                      disabled={false}
-                    >
-                      <SubMenuIcon 
-                        width="22" 
-                        height="22" 
-                        className="text-[#374151]"
-                      />
-                    </button>
-                    {openMenuId === todo.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 px-1 min-w-[120px]">
-                        <button
-                          onClick={() => startEdit(todo)}
-                          className="w-full text-left px-3 py-2 text-base text-gray-900 hover:bg-gray-100 rounded hover:rounded mb-1 [&:last-child]:mb-0 flex items-center gap-2"
-                        >
-                          編集
-                        </button>
-                        <button
-                          onClick={() => startDelete(todo)}
-                          className="w-full text-left px-3 py-2 text-base text-red-600 hover:bg-gray-100 rounded hover:rounded mb-1 [&:last-child]:mb-0 flex items-center gap-2"
-                        >
-                          削除
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <SubMenuIcon width="20" height="20" className="text-[#374151]" />
+                </button>
 
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-bold text-lg text-text leading-none pr-8">{todo.task_title}</h3>
-                    <div className="flex gap-2">
-                      <PriorityBadge priority={todo.priority} size="md" />
-                      <StatusBadge status={todo.status} size="md" />
-                    </div>
-                    <div className="text-text text-sm whitespace-pre-wrap">{todo.task_text}</div>
+                {/* メニュー */}
+                {openMenuId === todo.id && (
+                  <div className="absolute top-12 right-4 bg-white rounded-lg shadow-lg py-2 z-10">
+                    <button
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors"
+                      onClick={() => startEdit(todo)}
+                    >
+                      編集
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 transition-colors"
+                      onClick={() => startDelete(todo)}
+                    >
+                      削除
+                    </button>
                   </div>
-                </li>
-              ))}
-          </ul>
+                )}
+
+                {/* ToDo内容 */}
+                <div className="pr-12">
+                  <h3 className="font-bold text-lg text-text leading-none pr-8">{todo.todo_title}</h3>
+                  <div className="flex gap-2 mt-2">
+                    {todo.priority && <PriorityBadge priority={todo.priority} size="sm" />}
+                    {todo.status && <StatusBadge status={todo.status} size="sm" />}
+                  </div>
+                  <div className="text-text text-sm whitespace-pre-wrap mt-2">{todo.todo_text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </main>
       </div>
 
       {/* 追加モーダル */}
       <TodoAddModal
-        isOpen={addModalOpen}
+        isOpen={showTodoAddModal}
         onSave={handleAddModalSave}
         onCancel={handleAddModalCancel}
       />
@@ -341,37 +377,39 @@ export default function TodosPage() {
       {/* 編集モーダル */}
       <TodoEditModal
         todo={editingTodo}
-        isOpen={editModalOpen}
+        isOpen={showTodoEditModal}
         onSave={handleModalSave}
         onCancel={handleModalCancel}
       />
 
       {/* 削除確認モーダル */}
       <ConfirmModal
-        isOpen={deleteModalOpen}
-        title="削除"
-        message="ToDoを削除します。<br>この操作は戻すことはできませんがよろしいですか？"
-        confirmText="OK"
-        cancelText="キャンセル"
+        isOpen={showTodoDeleteModal}
+        title="ToDoの削除"
+        message={`「${deletingTodo?.todo_title}」を削除しますか？`}
+        confirmText="削除"
+        variant="danger"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
-        variant="danger"
       />
 
       {/* プロフィールモーダル */}
       <ProfileModal
-        isOpen={profileModalOpen}
+        isOpen={showProfileModal}
         onSave={handleProfileSave}
         onCancel={handleProfileCancel}
-        initialProfile={{ lastName: user?.lastName || '', firstName: user?.firstName || '' }}
+        initialProfile={user ? { lastName: user.lastName, firstName: user.firstName } : null}
       />
 
       {/* トースト通知 */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isOpen={toast.isOpen}
-      />
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          isOpen={toast.isOpen} 
+          onClose={hideToast}
+        />
+      )}
     </div>
   );
 } 

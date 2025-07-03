@@ -1,120 +1,144 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
-import { usePriorities } from './usePriorities';
+import { useTodoPriorities } from './useTodoPriorities';
 
 export function useTodos(userId: string | null) {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [toggleLoading] = useState<string | null>(null); // setToggleLoading削除（toggleTodo機能削除により不要）
-  const [addLoading, setAddLoading] = useState(false);
+  const [isToggleLoading, setIsToggleLoading] = useState<string | null>(null);
+  const [isAddTodoLoading, setIsAddTodoLoading] = useState(false);
+  const [isUpdateTodoLoading, setIsUpdateTodoLoading] = useState(false);
+  const [isDeleteTodoLoading, setIsDeleteTodoLoading] = useState(false);
 
   // Priority情報を取得
-  const { getDefaultPriorityId } = usePriorities();
+  const { getDefaultPriorityId } = useTodoPriorities();
 
   useEffect(() => {
     if (!userId) {
-      setLoading(true);
+      setIsLoading(true);
       return;
     }
-    setLoading(true);
+    setIsLoading(true);
     setError('');
     (async () => {
-      const { data: todosData, error: todosError } = await supabase
-        .from('todos')
-        .select(`
-          *,
-          priority:priorities(*),
-          status:task_statuses(*)
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (todosError) {
+      try {
+        const { data: todosData, error: todosError } = await supabase
+          .from('todos')
+          .select(`
+            *,
+            priority:todo_priorities(*),
+            status:todo_statuses(*)
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        
+        if (todosError) {
+          throw todosError;
+        }
+        
+        setTodos(todosData || []);
+      } catch (error) {
         setError('ToDoの取得に失敗しました');
         setTodos([]);
-      } else {
-        setTodos(todosData || []);
+      } finally {
+        setIsLoading(false);
       }
-      setLoading(false);
     })();
   }, [userId]);
 
   // ToDo削除ロジック
   const deleteTodo = async (id: string) => {
-    const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
-    if (deleteError) {
+    setIsDeleteTodoLoading(true);
+    try {
+      const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
+      if (deleteError) {
+        throw deleteError;
+      }
+      // 削除成功時のみUIを更新
+      setTodos(prev => prev.filter(todo => todo.id !== id));
+    } catch (error) {
       setError('削除に失敗しました');
-      throw new Error('削除に失敗しました');
+      throw error;
+    } finally {
+      setIsDeleteTodoLoading(false);
     }
-    // 削除成功時のみUIを更新
-    setTodos(prev => prev.filter(todo => todo.id !== id));
   };
-
-  // toggleTodo機能は削除済み（is_completedカラム削除により不要）
 
   // ToDo追加ロジック
   const addTodo = async (
     title: string, 
     text: string, 
     priorityId?: string,
-    statusId?: string,
-    onSuccess?: (todo: Todo) => void
+    statusId?: string
   ) => {
+    console.log('📝 addTodo called:', { title, text, priorityId, statusId });
     setError('');
     if (!title.trim()) {
+      console.log('❌ Title validation failed');
       setError('タイトルは必須です');
       return false;
     }
     
-    // priorityIdが指定されていない場合はデフォルト（「中」）を使用
-    const finalPriorityId = priorityId || getDefaultPriorityId();
-    if (!finalPriorityId) {
-      setError('優先度データの取得に失敗しました');
-      return false;
-    }
-    
-    // statusIdが指定されていない場合はデフォルト状態（「未着手」）を使用
-    let finalStatusId = statusId;
-    if (!finalStatusId) {
-      const { data: defaultStatus } = await supabase
-        .from('task_statuses')
-        .select('id')
-        .eq('name', '未着手')
-        .single();
-
-      if (!defaultStatus) {
-        setError('デフォルト状態の取得に失敗しました');
+    try {
+      const finalPriorityId = priorityId || getDefaultPriorityId();
+      console.log('🎯 Priority ID:', finalPriorityId);
+      if (!finalPriorityId) {
+        console.log('❌ Failed to get priority ID');
+        setError('優先度データの取得に失敗しました');
         return false;
       }
-      finalStatusId = defaultStatus.id;
-    }
-    
-    setAddLoading(true);
-    try {
+      
+      let finalStatusId = statusId;
+      if (!finalStatusId) {
+        console.log('🔍 Fetching default status...');
+        const { data: defaultStatus, error: statusError } = await supabase
+          .from('todo_statuses')
+          .select('id')
+          .eq('name', '未着手')
+          .single();
+
+        if (statusError || !defaultStatus) {
+          console.error('❌ Failed to get default status:', statusError);
+          setError('デフォルト状態の取得に失敗しました');
+          return false;
+        }
+        finalStatusId = defaultStatus.id;
+        console.log('✅ Default status ID:', finalStatusId);
+      }
+      
+      setIsAddTodoLoading(true);
+      console.log('💾 Inserting todo...');
+      
       const { data: inserted, error: insertError } = await supabase.from('todos').insert({
         user_id: userId,
-        task_title: title,
-        task_text: text,
-        status_id: finalStatusId,
-        priority_id: finalPriorityId,
+        todo_title: title,
+        todo_text: text,
+        todo_status_id: finalStatusId,
+        todo_priority_id: finalPriorityId,
       }).select(`
         *,
-        priority:priorities(*),
-        status:task_statuses(*)
+        priority:todo_priorities(*),
+        status:todo_statuses(*)
       `).single();
       
-      if (insertError) {
+      if (insertError || !inserted) {
+        console.error('❌ Insert failed:', insertError);
         setError('ToDoの追加に失敗しました');
         return false;
-      } else if (inserted) {
-        setTodos(prev => [inserted, ...prev]);
-        onSuccess?.(inserted);
-        return true;
       }
+      
+      console.log('✅ Todo inserted successfully:', inserted);
+      setTodos(prev => [inserted, ...prev]);
+      return true;
+    } catch (error) {
+      console.error('❌ Unexpected error in addTodo:', error);
+      const errorMessage = error instanceof Error ? error.message : 'ToDoの追加に失敗しました';
+      setError(errorMessage);
       return false;
     } finally {
-      setAddLoading(false);
+      setIsAddTodoLoading(false);
     }
   };
 
@@ -124,68 +148,64 @@ export function useTodos(userId: string | null) {
     title: string,
     text: string,
     priorityId?: string,
-    statusId?: string,
-    onSuccess?: (todo: Todo) => void
+    statusId?: string
   ) => {
     setError('');
+    setIsUpdateTodoLoading(true);
     try {
-      // 1. Supabaseで更新実行
-      const updateData: { task_title: string; task_text: string; priority_id?: string; status_id?: string } = {
-        task_title: title,
-        task_text: text,
+      const updateData: { todo_title: string; todo_text: string; todo_priority_id?: string; todo_status_id?: string } = {
+        todo_title: title,
+        todo_text: text,
       };
       
       if (priorityId) {
-        updateData.priority_id = priorityId;
+        updateData.todo_priority_id = priorityId;
       }
       
       if (statusId) {
-        updateData.status_id = statusId;
+        updateData.todo_status_id = statusId;
       }
       
       const { error: updateError } = await supabase.from('todos').update(updateData).eq('id', id);
       
       if (updateError) {
-        setError('編集に失敗しました');
         throw updateError;
       }
       
-      // 2. 更新成功後、最新データを取得（Priority・Status情報含む）
       const { data: updatedTodo, error: fetchError } = await supabase
         .from('todos')
-        .select(`*, priority:priorities(*), status:task_statuses(*)`)
+        .select(`*, priority:todo_priorities(*), status:todo_statuses(*)`)
         .eq('id', id)
         .single();
       
-      if (fetchError) {
-        setError('更新データの取得に失敗しました');
-        throw fetchError;
+      if (fetchError || !updatedTodo) {
+        throw new Error('更新データの取得に失敗しました');
       }
       
-      // 3. レスポンス受信後にUI更新
       setTodos(prev => prev.map(todo => 
         todo.id === id ? updatedTodo : todo
       ));
       
-      // 成功コールバック実行
-      onSuccess?.(updatedTodo);
       return true;
-    } catch (err) {
-      // エラー時は何もしない（UIは元のまま保持）
-      throw err;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '編集に失敗しました');
+      return false;
+    } finally {
+      setIsUpdateTodoLoading(false);
     }
   };
 
   return { 
     todos, 
     setTodos, 
-    loading, 
+    isLoading, 
     error, 
     deleteTodo, 
-    // toggleTodo: 削除済み（is_completedカラム削除により不要）
-    toggleLoading,
+    isToggleLoading,
     addTodo,
-    addLoading,
+    isAddTodoLoading,
+    isUpdateTodoLoading,
+    isDeleteTodoLoading,
     updateTodo
   };
 }

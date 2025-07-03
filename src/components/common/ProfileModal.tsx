@@ -6,7 +6,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface ProfileModalProps {
   isOpen: boolean;
-  onSave: (lastName: string, firstName: string) => Promise<void>;
+  onSave: (lastName: string, firstName: string) => Promise<boolean>;
   onCancel: () => void;
   initialProfile?: { lastName: string; firstName: string } | null;
 }
@@ -23,7 +23,6 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
   const [firstNameError, setFirstNameError] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   // 背景スクロール制御
@@ -79,8 +78,18 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
     setFirstNameError('');
   };
 
+  const resetForm = () => {
+    setLastName('');
+    setFirstName('');
+    setLastNameError('');
+    setFirstNameError('');
+    setLastNameTouched(false);
+    setLastNameFocused(false);
+    setFirstNameTouched(false);
+    setFirstNameFocused(false);
+  };
+
   const handleSave = async () => {
-    setError('');
     if (!lastName.trim()) {
       setLastNameError('必須項目です');
       return;
@@ -92,42 +101,25 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
 
     setIsSaving(true);
     try {
-      await onSave(lastName, firstName);
-      // 保存成功時は閉じるアニメーションを実行
-      setShowModal(false);
-      setTimeout(() => {
-        setLastName('');
-        setFirstName('');
-        setError('');
-        setLastNameError('');
-        setFirstNameError('');
-        setLastNameTouched(false);
-        setLastNameFocused(false);
-        setFirstNameTouched(false);
-        setFirstNameFocused(false);
-        onCancel();
-      }, 300);
+      const success = await onSave(lastName, firstName);
+      if (success) {
+        setShowModal(false);
+        setTimeout(() => {
+          resetForm();
+          onCancel();
+        }, 300);
+      }
     } catch {
-      setError('保存に失敗しました');
+      // エラー表示の処理を削除
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleCancel = () => {
-    // 閉じるアニメーションを開始
     setShowModal(false);
-    // アニメーション完了後にモーダルを閉じる
     setTimeout(() => {
-      setLastName('');
-      setFirstName('');
-      setError('');
-      setLastNameError('');
-      setFirstNameError('');
-      setLastNameTouched(false);
-      setLastNameFocused(false);
-      setFirstNameTouched(false);
-      setFirstNameFocused(false);
+      resetForm();
       onCancel();
     }, 300);
   };
@@ -187,10 +179,12 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
         {/* コンテンツ */}
         <div className="p-6">
           {/* エラーメッセージ */}
-          {error && (
-            <div className="mb-4 text-red-600 font-semibold text-sm text-center">
-              {error}
-            </div>
+          {lastNameError && (lastNameTouched || (!lastNameFocused && lastName === '')) && (
+            <p className="text-xs text-red-600 font-semibold mt-2">{lastNameError}</p>
+          )}
+          
+          {firstNameError && (firstNameTouched || (!firstNameFocused && firstName === '')) && (
+            <p className="text-xs text-red-600 font-semibold mt-2">{firstNameError}</p>
           )}
 
           {/* プロフィールフォーム */}
@@ -218,9 +212,6 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
                 disabled={isSaving}
                 autoFocus
               />
-              {lastNameError && (lastNameTouched || (!lastNameFocused && lastName === '')) && (
-                <p className="text-xs text-red-600 font-semibold mt-2">{lastNameError}</p>
-              )}
             </div>
             
             <div>
@@ -245,29 +236,47 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
                 placeholder="太郎"
                 disabled={isSaving}
               />
-              {firstNameError && (firstNameTouched || (!firstNameFocused && firstName === '')) && (
-                <p className="text-xs text-red-600 font-semibold mt-2">{firstNameError}</p>
-              )}
             </div>
           </div>
-        </div>
 
-        {/* フッター */}
-        <div className="px-6 py-4 border-t border-white/30 rounded-b-2xl">
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={handleCancel}
-              className="flex-1 px-4 py-2 bg-gray-500 text-white text-base font-bold rounded-[2rem] hover:bg-gray-600 transition-colors"
-              disabled={isSaving}
-            >
-              キャンセル
-            </button>
+          {/* 保存ボタン */}
+          <div className="mt-6">
             <button
               onClick={handleSave}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white text-base font-bold rounded-[2rem] hover:bg-blue-600 transition-colors"
-              disabled={isSaving}
+              disabled={isSaving || !lastName.trim() || !firstName.trim()}
+              className={`w-full flex justify-center items-center py-3 px-4 rounded-lg text-white font-semibold transition-all duration-200 ${
+                isSaving || !lastName.trim() || !firstName.trim()
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-primary hover:bg-primary/90'
+              }`}
             >
-              {isSaving ? '保存中...' : '保存'}
+              {isSaving ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  保存中...
+                </>
+              ) : (
+                '保存'
+              )}
             </button>
           </div>
         </div>

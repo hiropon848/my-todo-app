@@ -3,17 +3,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import CloseIcon from '@/icons/close.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
-import { usePriorities } from '@/hooks/usePriorities';
-import { useTaskStatuses } from '@/hooks/useTaskStatuses';
+import { useTodoPriorities } from '@/hooks/useTodoPriorities';
+import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
-import { Priority } from '@/types/priority';
-import { TaskStatus } from '@/types/taskStatus';
+import { TodoPriority } from '@/types/todoPriority';
+import { TodoStatus } from '@/types/todoStatus';
 
 interface TodoAddModalProps {
   isOpen: boolean;
-  onSave: (title: string, text: string, priorityId?: string, statusId?: string) => Promise<void>;
+  onSave: (title: string, text: string, priorityId?: string | undefined, statusId?: string | undefined) => Promise<boolean>;
   onCancel: () => void;
 }
 
@@ -31,15 +31,13 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Priority情報を取得
-  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = usePriorities();
+  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
 
-  // TaskStatus情報を取得
-  const { taskStatuses, loading: taskStatusesLoading, getDefaultTaskStatusId } = useTaskStatuses();
+  // Status情報を取得
+  const { todoStatuses, loading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
-
-
 
   // モーダルのアニメーション制御（表示・非表示の両方にアニメーション）
   useEffect(() => {
@@ -86,21 +84,21 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
 
   // デフォルト状態設定（taskStatusesが読み込まれた後）
   useEffect(() => {
-    if (isOpen && !taskStatusesLoading && taskStatuses.length > 0 && selectedStatusId === '') {
+    if (isOpen && !todoStatusesLoading && todoStatuses.length > 0 && selectedStatusId === '') {
       try {
-        const defaultStatusId = getDefaultTaskStatusId();
+        const defaultStatusId = getDefaultTodoStatusId();
         if (defaultStatusId) {
           setSelectedStatusId(defaultStatusId);
         }
       } catch (error) {
         console.error('Error setting default status:', error);
         // エラーが発生した場合は最初のstatusを選択
-        if (taskStatuses[0]) {
-          setSelectedStatusId(taskStatuses[0].id);
+        if (todoStatuses[0]) {
+          setSelectedStatusId(todoStatuses[0].id);
         }
       }
     }
-  }, [isOpen, taskStatusesLoading, taskStatuses, selectedStatusId, getDefaultTaskStatusId]);
+  }, [isOpen, todoStatusesLoading, todoStatuses, selectedStatusId, getDefaultTodoStatusId]);
 
   // タイトルのバリデーション
   const validateTitle = (value: string, blur = false) => {
@@ -172,22 +170,24 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
 
     setIsSaving(true);
     try {
-      await onSave(title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
-      // 保存成功時は閉じるアニメーションを実行
-      setShowModal(false);
-      setTimeout(() => {
-        setTitle('');
-        setText('');
-        setSelectedPriorityId('');
-        setSelectedStatusId('');
-        setError('');
-        setTitleError('');
-        setTitleTouched(false);
-        setTitleFocused(false);
-        onCancel();
-      }, 300);
-    } catch {
-      setError('作成に失敗しました');
+      const success = await onSave(title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
+      if (success) {
+        // 成功時は閉じるアニメーションを実行
+        setShowModal(false);
+        setTimeout(() => {
+          // フォームリセット
+          setTitle('');
+          setText('');
+          setSelectedPriorityId('');
+          setSelectedStatusId('');
+          setError('');
+          setTitleError('');
+          setTitleTouched(false);
+          setTitleFocused(false);
+          setIsCancelling(false);
+          onCancel();
+        }, 300);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -319,13 +319,13 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 placeholder="優先度を選択"
                 renderOption={(option) => (
                   <PriorityBadge
-                    priority={option as Priority}
+                    priority={option as TodoPriority}
                     size="md"
                   />
                 )}
                 renderSelectedOption={(option) => (
                   <PriorityBadge
-                    priority={option as Priority}
+                    priority={option as TodoPriority}
                     size="md"
                   />
                 )}
@@ -340,19 +340,19 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 id="add-modal-status"
                 value={selectedStatusId}
                 onChange={setSelectedStatusId}
-                options={taskStatuses}
-                disabled={isSaving || taskStatusesLoading}
-                loading={taskStatusesLoading}
+                options={todoStatuses}
+                disabled={isSaving || todoStatusesLoading}
+                loading={todoStatusesLoading}
                 placeholder="状態を選択"
                 renderOption={(option) => (
                   <StatusBadge
-                    status={option as TaskStatus}
+                    status={option as TodoStatus}
                     size="md"
                   />
                 )}
                 renderSelectedOption={(option) => (
                   <StatusBadge
-                    status={option as TaskStatus}
+                    status={option as TodoStatus}
                     size="md"
                   />
                 )}

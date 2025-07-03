@@ -8,7 +8,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface PasswordModalProps {
   isOpen: boolean;
-  onSave: (currentPassword: string, newPassword: string) => Promise<void>;
+  onSave: (currentPassword: string, newPassword: string) => Promise<boolean>;
   onCancel: () => void;
 }
 
@@ -32,7 +32,6 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   // 背景スクロール制御
@@ -127,7 +126,6 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
     newPassword === confirmPassword;
 
   const handleSave = async () => {
-    setError('');
     if (!currentPassword.trim()) {
       setCurrentPasswordError('必須項目です');
       return;
@@ -163,15 +161,15 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
 
     setIsSaving(true);
     try {
-      await onSave(currentPassword, newPassword);
-      // 保存成功時は閉じるアニメーションを実行
-      setShowModal(false);
-      setTimeout(() => {
-        resetForm();
-        onCancel();
-      }, 300);
-    } catch {
-      setError('パスワード変更に失敗しました');
+      const success = await onSave(currentPassword, newPassword);
+      if (success) {
+        // 保存成功時は閉じるアニメーションを実行
+        setShowModal(false);
+        setTimeout(() => {
+          resetForm();
+          onCancel();
+        }, 300);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -195,8 +193,6 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
     setConfirmPasswordFocused(false);
     setConfirmPasswordError('');
     setShowConfirmPassword(false);
-
-    setError('');
   };
 
   const handleCancel = () => {
@@ -263,13 +259,6 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
 
         {/* コンテンツ */}
         <div className="p-6">
-          {/* エラーメッセージ */}
-          {error && (
-            <div className="mb-4 text-red-600 font-semibold text-sm text-center">
-              {error}
-            </div>
-          )}
-
           {/* パスワード変更フォーム */}
           <div className="space-y-4">
             {/* 現在のパスワード */}
