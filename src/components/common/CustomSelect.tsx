@@ -162,7 +162,7 @@ export function CustomSelect({
                 onClick={() => handleOptionClick(option.id)}
                 className={`w-full text-left px-3 py-2 text-base transition-colors mb-1 [&:last-child]:mb-0 ${
                   option.id === value
-                    ? 'bg-blue-50 text-blue-600 font-medium rounded'
+                    ? 'bg-blue-100 font-medium rounded'
                     : 'text-gray-900 hover:bg-gray-100 hover:rounded'
                 }`}
               >

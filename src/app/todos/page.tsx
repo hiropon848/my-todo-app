@@ -10,9 +10,11 @@ import { TodoEditModal } from '@/components/TodoEditModal';
 import { TodoAddModal } from '@/components/TodoAddModal';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { ProfileModal } from '@/components/common/ProfileModal';
+import { ConditionModal } from '@/components/common/ConditionModal';
 import { Toast } from '@/components/common/Toast';
 import { useToast } from '@/hooks/useToast';
 import SubMenuIcon from '@/icons/menu-sub.svg';
+import SortAndFilterIcon from '@/icons/sort-and-filter.svg';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useProfile } from '@/hooks/useProfile';
@@ -41,6 +43,7 @@ export default function TodosPage() {
   const [deletingTodo, setDeletingTodo] = useState<{ id: string; todo_title: string } | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTodoAddModal, setShowTodoAddModal] = useState(false);
+  const [showConditionModal, setShowConditionModal] = useState(false);
 
   // useTodosカスタムフック
   const { 
@@ -290,37 +293,19 @@ export default function TodosPage() {
             </div>
           )}
 
-          {/* 完了したToDoの表示切り替え */}
+          {/* フィルターボタン */}
           <div className="flex flex-col mb-6 bg-white/30 rounded-xl p-4 border border-white/20 shadow">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="show-completed"
-                className="w-5 h-5 accent-primary mr-2"
-                checked={user.showCompleted}
-                disabled={showCompletedLoading}
-                onChange={async (e) => {
-                  const checked = e.target.checked;
-                  setShowCompletedLoading(true);
-                  try {
-                    // 削除されたカラムの更新を無効化（Phase 3で機能ごと削除予定）
-                    // const { error: updateError } = await supabase
-                    //   .from('profiles')
-                    //   .update({ is_show_completed_todos: checked })
-                    //   .eq('id', user.id);
-                    // if (updateError) {
-                    //   setError('表示設定の更新に失敗しました');
-                    // } else {
-                      updateUser({ showCompleted: checked });
-                    // }
-                  } finally {
-                    setShowCompletedLoading(false);
-                  }
-                }}
-              />
-              <label htmlFor="show-completed" className="text-text">
-                完了したToDoを表示する
-              </label>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowConditionModal(true)}
+                className="p-3 rounded-full hover:bg-black/10 transition-colors"
+              >
+                <SortAndFilterIcon 
+                  width="22" 
+                  height="22" 
+                  className="text-[#374151]"
+                />
+              </button>
             </div>
           </div>
           {/* ToDoリスト */}
@@ -403,6 +388,13 @@ export default function TodosPage() {
         onSave={handleProfileSave}
         onCancel={handleProfileCancel}
         initialProfile={user ? { lastName: user.lastName, firstName: user.firstName } : null}
+      />
+
+      {/* ConditionModal */}
+      <ConditionModal
+        isOpen={showConditionModal}
+        onSave={async () => { setShowConditionModal(false); return true; }}
+        onCancel={() => setShowConditionModal(false)}
       />
 
       {/* トースト通知 */}
