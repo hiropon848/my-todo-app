@@ -179,10 +179,12 @@ export default function TodosPage() {
         return false;
       }
       
-      updateUser({ lastName, firstName });
+      // 先にモーダルを閉じる
       setShowProfileModal(false);
-      // モーダルのアニメーション完了後にトースト表示
+      
+      // アニメーション完了後にAuthContext更新とトースト表示
       setTimeout(() => {
+        updateUser({ lastName, firstName });
         showToast('プロフィールを更新しました', 'success');
       }, 300);
       return true;

@@ -25,10 +25,10 @@ export function useToast() {
     // 新しいトーストを表示
     setToast({ message, type, isOpen: true });
     
-    // 2秒後にフェードアウト開始
+    // 3秒後にフェードアウト開始
     timeoutRef.current = setTimeout(() => {
       setToast(prev => ({ ...prev, isOpen: false }));
-    }, 2000);
+    }, 3000);
   }, []);
 
   const hideToast = useCallback(() => {

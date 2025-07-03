@@ -27,7 +27,7 @@ export function Toast({ message, type, isOpen, onClose }: ToastProps) {
         if (onClose) {
           setTimeout(onClose, 600);
         }
-      }, 2000);
+      }, 3000);
 
       return () => clearTimeout(fadeTimer);
     } else {
