@@ -25,7 +25,7 @@ export function useProfile(): UseProfileReturn {
       }
 
       return true;
-    } catch (err) {
+    } catch {
       setError('プロフィールの更新に失敗しました');
       return false;
     } finally {

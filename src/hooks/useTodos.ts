@@ -7,7 +7,7 @@ export function useTodos(userId: string | null) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isToggleLoading, setIsToggleLoading] = useState<string | null>(null);
+  const [isToggleLoading] = useState<string | null>(null);
   const [isAddTodoLoading, setIsAddTodoLoading] = useState(false);
   const [isUpdateTodoLoading, setIsUpdateTodoLoading] = useState(false);
   const [isDeleteTodoLoading, setIsDeleteTodoLoading] = useState(false);
@@ -39,7 +39,7 @@ export function useTodos(userId: string | null) {
         }
         
         setTodos(todosData || []);
-      } catch (error) {
+      } catch {
         setError('ToDoの取得に失敗しました');
         setTodos([]);
       } finally {

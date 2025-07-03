@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { HeaderWithMenu } from '@/components/common/HeaderWithMenu';
@@ -52,13 +51,16 @@ export default function TodosPage() {
     isToggleLoading: _isToggleLoading,
     addTodo,
     updateTodo,
-    isAddTodoLoading,
-    isUpdateTodoLoading,
-    isDeleteTodoLoading
+    isAddTodoLoading: _isAddTodoLoading,
+    isUpdateTodoLoading: _isUpdateTodoLoading,
+    isDeleteTodoLoading: _isDeleteTodoLoading
   } = useTodos(user?.id || null);
   
   // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
   void _isToggleLoading;
+  void _isAddTodoLoading;
+  void _isUpdateTodoLoading;
+  void _isDeleteTodoLoading;
   const { toast, showToast, hideToast } = useToast();
 
   const { updateProfile } = useProfile();
@@ -120,7 +122,7 @@ export default function TodosPage() {
       }
       showToast('更新に失敗しました', 'error');
       return false;
-    } catch (err) {
+    } catch {
       showToast('更新に失敗しました', 'error');
       return false;
     }
@@ -184,7 +186,7 @@ export default function TodosPage() {
         showToast('プロフィールを更新しました', 'success');
       }, 300);
       return true;
-    } catch (error) {
+    } catch {
       showToast('プロフィールの更新に失敗しました', 'error');
       return false;
     }

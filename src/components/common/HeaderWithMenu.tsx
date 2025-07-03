@@ -7,8 +7,6 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { PasswordModal } from '@/components/common/PasswordModal';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { useToast } from '@/hooks/useToast';
-import { Toast } from './Toast';
-import MainMenuIcon from '@/icons/menu-main.svg';
 
 interface HeaderWithMenuProps {
   title: string;
