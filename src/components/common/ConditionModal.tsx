@@ -78,21 +78,31 @@ export function ConditionModal({
   }, [isOpen, handleCancel]);
 
   const handlePriorityToggle = (priorityId: string) => {
+    // ID→名前変換
+    const priority = priorities.find(p => p.id === priorityId);
+    if (!priority) return;
+    
+    const priorityName = priority.name;
     const newSelected = new Set(selectedPriorities);
-    if (newSelected.has(priorityId)) {
-      newSelected.delete(priorityId);
+    if (newSelected.has(priorityName)) {
+      newSelected.delete(priorityName);
     } else {
-      newSelected.add(priorityId);
+      newSelected.add(priorityName);
     }
     setSelectedPriorities(newSelected);
   };
 
   const handleStatusToggle = (statusId: string) => {
+    // ID→名前変換
+    const status = todoStatuses.find(s => s.id === statusId);
+    if (!status) return;
+    
+    const statusName = status.name;
     const newSelected = new Set(selectedStatuses);
-    if (newSelected.has(statusId)) {
-      newSelected.delete(statusId);
+    if (newSelected.has(statusName)) {
+      newSelected.delete(statusName);
     } else {
-      newSelected.add(statusId);
+      newSelected.add(statusName);
     }
     setSelectedStatuses(newSelected);
   };
@@ -198,7 +208,7 @@ export function ConditionModal({
                         key={priority.id}
                         onClick={() => handlePriorityToggle(priority.id)}
                         className={`w-full text-left px-3 py-2 text-base transition-colors mb-1 ${
-                          selectedPriorities.has(priority.id)
+                          selectedPriorities.has(priority.name)
                             ? 'bg-blue-100 font-medium rounded'
                             : 'text-gray-900 hover:bg-gray-100 hover:rounded'
                         }`}
@@ -232,7 +242,7 @@ export function ConditionModal({
                         key={status.id}
                         onClick={() => handleStatusToggle(status.id)}
                         className={`w-full text-left px-3 py-2 text-base transition-colors mb-1 ${
-                          selectedStatuses.has(status.id)
+                          selectedStatuses.has(status.name)
                             ? 'bg-blue-100 font-medium rounded'
                             : 'text-gray-900 hover:bg-gray-100 hover:rounded'
                         }`}

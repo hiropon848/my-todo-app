@@ -275,8 +275,8 @@ export function useURLFilters() {
       params.set('statuses', statuses.join(','));
     }
     
-    // ページ遷移ではなくURLの更新のみ
-    router.replace(`?${params.toString()}`, { scroll: false });
+    // ブラウザ履歴に追加してURL更新（scroll無効化）
+    router.push(`?${params.toString()}`, { scroll: false });
   };
   
   return { getFiltersFromURL, updateFilters, isReady: true };
@@ -289,22 +289,53 @@ export function useURLFilters() {
 - `getFiltersFromURL`: URLパラメータを解析して配列で返す機能を実装
 - `updateFilters`: URLSearchParams を使用してURL更新機能を実装
 - 空配列の場合はパラメータ削除、値がある場合はカンマ区切りで設定
-- `router.replace` で scroll:false を指定してページスクロール防止
+- **修正**: `router.push` で scroll:false を指定、ブラウザ履歴に記録
 - **重要**: todos/page.tsx に Suspense境界を追加してNext.js 15要件を満たす
 - TodosPageContent と TodosPage に分離、Suspense でラップ
 
-### **Step 3-3: 機能フラグテスト**
+### **Step 3-3: 機能フラグテスト** ✅ **完了**
 
 1. **ENABLE_URL_FILTERS = false**で動作確認
 2. **ENABLE_URL_FILTERS = true**に変更してURL管理をテスト
 3. 問題があれば即座にfalseに戻す
 
+**📅 実装完了日時**: 2025-07-04
+**🔍 実装詳細**:
+- `ENABLE_URL_FILTERS = true` に変更してURL管理機能を有効化
+- ConditionModal の onSave ハンドラーを実装してURL更新機能を動作させる
+
+#### **🚨 実装中に発見・修正した重要問題**:
+
+**問題1: URLパラメータがUUID形式で人間が読めない**
+- 修正前: `?priorities=c95322a9-1504-444e-ba19-5df8c91c6c4d`
+- 修正後: `?priorities=高,中&statuses=未着手,進行中`
+- **解決**: ConditionModal 内部の選択値管理をIDから名前ベースに変更
+
+**問題2: ブラウザ履歴が機能しない（router.replace問題）**
+- 現象: 戻るボタンで新規タブ状態に戻ってしまう
+- 原因: `router.replace()` は履歴に残らない
+- **解決**: `router.push()` に変更してブラウザ履歴に記録
+
+**問題3: URL変化時にConditionModal初期値が自動更新されない**
+- 現象: ブラウザ戻る/進むでURLが変化してもConditionModalの初期値が更新されない
+- **解決**: URL変化監視機能を追加
+  - `useURLFilters` フックに `currentFilters` 状態を追加
+  - `todos/page.tsx` でURL変化を監視して `conditionModalInitialState` を自動更新
+
+#### **追加実装**:
+- **デバッグログ**: 動作確認用のコンソールログを追加
+- **Suspense境界**: Next.js 15 要件に対応
+- **名前⇔ID変換**: 将来のフィルタリング実装に備えた変換処理
+
+
 ### **✅ Phase 3 確認項目:**
-- [ ] `ENABLE_URL_FILTERS = false`でも既存動作が維持される
-- [ ] `ENABLE_URL_FILTERS = true`でURL管理が動作する
-- [ ] ブラウザの戻る/進むボタンで正常に動作する
-- [ ] URLパラメータが正しく設定・削除される
-- [ ] ページリロード時にフィルター状態が復元される
+- [x] `ENABLE_URL_FILTERS = false`でも既存動作が維持される
+- [x] `ENABLE_URL_FILTERS = true`でURL管理が動作する
+- [x] ブラウザの戻る/進むボタンで正常に動作する
+- [x] URLパラメータが正しく設定・削除される
+- [x] ページリロード時にフィルター状態が復元される
+- [x] URLパラメータが人間が読みやすい形式になっている
+- [x] ブラウザ履歴との完全同期が実現されている
 
 ---
 
@@ -641,6 +672,27 @@ Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
 - TypeScriptエラーは必ず解決してから次に進む
 - UIの破壊が発生した場合は即座に作業を中断し、原因を特定する
 
+### **🎓 Phase 3実装で学んだ重要な教訓**
+
+#### **1. 「実装完了」の基準**
+- **✅ 正しい**: 実際にブラウザで動作確認済み
+- **❌ 間違い**: コードが「正しく見える」だけで動作未確認
+
+#### **2. ブラウザAPI の理解**
+- **router.replace()**: 履歴に残らない（現在のURLを置換）
+- **router.push()**: 履歴に記録される（新しいエントリを追加）
+- **用途を正しく理解**して選択する
+
+#### **3. 段階的実装の重要性**
+- 問題は **実装中に必ず発見される**
+- 各段階での **動作確認は必須**
+- 問題発見時は **即座に修正**する
+
+#### **4. ユーザビリティの配慮**
+- **UUID は人間が読めない** → 名前ベースに変更
+- **ブラウザ履歴の動作** はユーザー体験に直結
+- **URLの可読性** は共有・ブックマーク時に重要
+
 ---
 
 ## **📋 実装チェックリスト**
@@ -657,11 +709,14 @@ Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
 - [x] Phase 2 確認項目すべてクリア
 - [x] **ユーザー確認完了（2025-07-04）**
 
-### **Phase 3: URL管理機能** 🔄 **実装中**
+### **Phase 3: URL管理機能** ✅ **完了**
 - [x] Step 3-1: 機能フラグ導入完了 ✅ **（2025-07-04完了）**
 - [x] Step 3-2: URL更新機能実装完了 ✅ **（2025-07-04完了）**
-- [ ] Step 3-3: 機能フラグテスト完了
-- [ ] Phase 3 確認項目すべてクリア
+- [x] Step 3-3: 機能フラグテスト完了 ✅ **（2025-07-04完了）**
+- [x] Phase 3 確認項目すべてクリア
+- [x] **URLパラメータ人間可読化対応完了（2025-07-04）**
+- [x] **ブラウザ履歴同期機能完了（2025-07-04）**
+- [x] **実装中問題発見・修正完了（2025-07-04）**
 
 ### **Phase 4: フィルタリング統合**
 - [ ] Step 4-1: useTodosフック拡張完了

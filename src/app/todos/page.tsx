@@ -23,7 +23,7 @@ import { useURLFilters } from '@/hooks/useURLFilters';
 
 function TodosPageContent() {
   // Phase 3: 機能フラグ（段階的有効化用）
-  const ENABLE_URL_FILTERS = false; // Phase 3-2でtrueに変更予定
+  const ENABLE_URL_FILTERS = true; // Phase 3-3で有効化
 
   const router = useRouter();
   const { user, isLoading, isLoggingOut, logout, updateUser } = useAuth();
@@ -50,7 +50,7 @@ function TodosPageContent() {
   const [showConditionModal, setShowConditionModal] = useState(false);
 
   // Phase 2: URLフィルター管理とConditionModal初期値状態
-  const { getFiltersFromURL } = useURLFilters();
+  const { getFiltersFromURL, updateFilters, currentFilters } = useURLFilters();
   const [conditionModalInitialState, setConditionModalInitialState] = useState({
     priorities: new Set<string>(),
     statuses: new Set<string>()
@@ -251,11 +251,43 @@ function TodosPageContent() {
   // ログアウト処理（Contextのlogout関数を使用）
   const handleLogout = logout;
 
+  // Phase 3: ConditionModal保存ハンドラー（URL更新機能）
+  const handleConditionSave = async (priorities: Set<string>, statuses: Set<string>) => {
+    if (ENABLE_URL_FILTERS) {
+      const priorityIds = Array.from(priorities);
+      const statusIds = Array.from(statuses);
+      updateFilters(priorityIds, statusIds);
+    }
+    setShowConditionModal(false);
+    return true;
+  };
+
+  // Phase 3: URL変化の監視とConditionModal初期値の自動更新
+  useEffect(() => {
+    if (ENABLE_URL_FILTERS) {
+      console.log('📝 ConditionModal初期値更新:', { 
+        priorities: currentFilters.priorities, 
+        statuses: currentFilters.statuses 
+      });
+      setConditionModalInitialState({
+        priorities: new Set(currentFilters.priorities),
+        statuses: new Set(currentFilters.statuses)
+      });
+    }
+  }, [ENABLE_URL_FILTERS, currentFilters]); // currentFiltersの変化を監視
+
   // Phase 3: ConditionModalを開く際の初期値設定（機能フラグで制御）
   const handleConditionModalOpen = () => {
     if (ENABLE_URL_FILTERS) {
-      // Phase 3-2で実装予定: URLフィルターから復元
+      // URLの変化は useEffect で監視済みなので、現在の状態をそのまま使用
       const urlFilters = getFiltersFromURL();
+      console.log('🚀 ConditionModal開く:', { 
+        urlFilters,
+        currentState: {
+          priorities: Array.from(conditionModalInitialState.priorities),
+          statuses: Array.from(conditionModalInitialState.statuses)
+        }
+      });
       setConditionModalInitialState({
         priorities: new Set(urlFilters.priorities),
         statuses: new Set(urlFilters.statuses)
@@ -423,7 +455,7 @@ function TodosPageContent() {
       {/* ConditionModal */}
       <ConditionModal
         isOpen={showConditionModal}
-        onSave={async () => { setShowConditionModal(false); return true; }}
+        onSave={handleConditionSave}
         onCancel={() => setShowConditionModal(false)}
         initialPriorities={conditionModalInitialState.priorities}
         initialStatuses={conditionModalInitialState.statuses}

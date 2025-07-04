@@ -15,25 +15,29 @@ export function useURLFilters() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
+  const [currentFilters, setCurrentFilters] = useState<URLFilterParams>({ priorities: [], statuses: [] });
   
   // コンポーネントマウント時にready状態を設定
   useEffect(() => {
     setIsReady(true);
   }, []);
+
+  // URLパラメータの変化を監視
+  useEffect(() => {
+    if (isReady) {
+      const priorities = searchParams.get('priorities')?.split(',').filter(p => p.trim()) || [];
+      const statuses = searchParams.get('statuses')?.split(',').filter(s => s.trim()) || [];
+      console.log('🔄 URL変化検知:', { priorities, statuses, searchParams: searchParams.toString() });
+      setCurrentFilters({ priorities, statuses });
+    }
+  }, [searchParams, isReady]);
   
   /**
    * URLからフィルターパラメータを読み取る
-   * Phase 3: 実際にURLパラメータを解析して返す
+   * Phase 3: 監視済みの状態を返す（パフォーマンス最適化）
    */
   const getFiltersFromURL = (): URLFilterParams => {
-    if (!isReady) {
-      return { priorities: [], statuses: [] };
-    }
-    
-    const priorities = searchParams.get('priorities')?.split(',').filter(p => p.trim()) || [];
-    const statuses = searchParams.get('statuses')?.split(',').filter(s => s.trim()) || [];
-    
-    return { priorities, statuses };
+    return currentFilters;
   };
   
   /**
@@ -61,13 +65,14 @@ export function useURLFilters() {
       params.set('statuses', statuses.join(','));
     }
     
-    // ページ遷移ではなくURLの更新のみ（scroll無効化）
-    router.replace(`?${params.toString()}`, { scroll: false });
+    // ブラウザ履歴に追加してURL更新（scroll無効化）
+    router.push(`?${params.toString()}`, { scroll: false });
   };
   
   return { 
     getFiltersFromURL, 
     updateFilters, 
-    isReady 
+    isReady,
+    currentFilters // URL変化を監視可能にする
   };
 }
