@@ -308,7 +308,7 @@ export function useURLFilters() {
 
 **問題1: URLパラメータがUUID形式で人間が読めない**
 - 修正前: `?priorities=c95322a9-1504-444e-ba19-5df8c91c6c4d`
-- 修正後: `?priorities=高,中&statuses=未着手,進行中`
+- 修正後: `?priorities=高,中&statuses=未着手,完了`
 - **解決**: ConditionModal 内部の選択値管理をIDから名前ベースに変更
 
 **問題2: ブラウザ履歴が機能しない（router.replace問題）**
@@ -464,99 +464,58 @@ export default function TodosPage() {
 }
 ```
 
-### **Step 4-3: URLからフィルター状態復元**
-
-```typescript
-// src/app/todos/page.tsx
-export default function TodosPage() {
-  // ページ読み込み時にURLからフィルター状態を復元
-  useEffect(() => {
-    if (ENABLE_URL_FILTERS && !prioritiesLoading && !statusesLoading) {
-      const urlFilters = getFiltersFromURL();
-      setActiveFilters({
-        priorityIds: urlFilters.priorities,
-        statusIds: urlFilters.statuses
-      });
-    }
-  }, [ENABLE_URL_FILTERS, prioritiesLoading, statusesLoading]);
-```
+### **Step 4-3: URLからフィルター状態復元** ✅ **完了**
 
 **📅 実装完了日時**: 2025-07-04
 **🔍 実装詳細**:
-- マスタデータフック（useTodoPriorities, useTodoStatuses）統合
-- activeFilters状態でID変換後のフィルター値を管理
-- useTodosにfilterParamsを渡すよう修正（useMemoで安定化）
-- handleConditionSaveで名前→ID変換ロジックを実装
-- URL変化監視とアクティブフィルター更新を統合（ブラウザバック対応）
-- **重要修正**: 無限ループ問題を解決（useMemo、useEffect依存配列最適化）
-- **重要修正**: ブラウザバック時のToDo一覧更新問題を解決
-- ESLint警告解決（eslint-disable-next-line追加）
+- **Step 4-2で統合実装済み**: URL復元機能はStep 4-2の実装に含まれて完了
+- URL変化監視とアクティブフィルター更新の統合実装
+- ページ読み込み時とブラウザバック時のURL復元機能
+- 名前→ID変換による適切なフィルタリング実行
+- currentFilters監視によるリアルタイム復元
 - 全品質チェック完了、ユーザー確認完了
-}
+
+**実装場所**: `src/app/todos/page.tsx` の統合useEffectにて実装完了
 ```
 
 ### **✅ Phase 4 確認項目:**
-- [ ] フィルターなしでも既存動作が維持される
-- [ ] フィルター適用時に期待されるデータが表示される
-- [ ] URLとフィルター状態が同期する
-- [ ] ConditionModalの保存機能が正常に動作する
-- [ ] ページリロード時にフィルターが復元される
+- [x] フィルターなしでも既存動作が維持される
+- [x] フィルター適用時に期待されるデータが表示される
+- [x] URLとフィルター状態が同期する
+- [x] ConditionModalの保存機能が正常に動作する
+- [x] ページリロード時にフィルターが復元される
 
 ---
 
 ## **Phase 5: UI状態表示・クリア機能**
 
-### **Step 5-1: フィルター状態表示**
+### **Step 5-1: フィルター状態表示** ✅ **完了**
 
 **ファイル編集**: `src/app/todos/page.tsx`
 
+**📅 実装完了日時**: 2025-07-04
+**🔍 実装詳細**:
+- **フィルター条件表示**：「条件：[優先度]高　[状態]完了」形式でラベル付きバッジ表示
+- **条件なし表示**：「条件：なし」で明示的な未設定状態表示
+- **該当件数表示**：「該当件数：XX 件」でリアルタイム件数表示
+- **実装された検索ロジック**：
+  - 優先度内でOR検索（例：「高」または「中」）
+  - ステータス内でOR検索（例：「未着手」または「完了」）
+  - 優先度とステータス間でAND検索
+- **マスタデータ対応**：
+  - 優先度：「高」「中」「低」
+  - ステータス：「未着手」「完了」
+- **UI統合**：既存のPriorityBadge、StatusBadgeコンポーネントを活用
+- **品質確認**：ESLint、TypeScript、Build すべて通過
+
 ```typescript
-// フィルター状態表示用の関数
-const getActiveFiltersText = () => {
-  const parts = [];
-  if (activeFilters.priorityIds.length > 0) {
-    parts.push(`優先度: ${activeFilters.priorityIds.length}件`);
-  }
-  if (activeFilters.statusIds.length > 0) {
-    parts.push(`状態: ${activeFilters.statusIds.length}件`);
-  }
-  return parts.join(', ');
-};
+// 実装された表示形式
+条件：[優先度]高　[状態]完了
+該当件数：3 件
 
-const hasActiveFilters = activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0;
-
-// フィルターボタン近くに状態表示を追加
-<div className="flex flex-col mb-6 bg-white/30 rounded-xl p-4 border border-white/20 shadow">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-2">
-      {ENABLE_URL_FILTERS && hasActiveFilters && (
-        <div className="text-sm text-blue-600 font-medium">
-          {getActiveFiltersText()}
-        </div>
-      )}
-    </div>
-    <div className="flex items-center gap-2">
-      {ENABLE_URL_FILTERS && hasActiveFilters && (
-        <button
-          onClick={handleClearFilters}
-          className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          クリア
-        </button>
-      )}
-      <button
-        onClick={handleConditionModalOpen}
-        className="p-3 rounded-full hover:bg-black/10 transition-colors"
-      >
-        <SortAndFilterIcon 
-          width="22" 
-          height="22" 
-          className="text-[#374151]"
-        />
-      </button>
-    </div>
-  </div>
-</div>
+// 条件なしの場合
+条件：なし
+該当件数：10 件
 ```
 
 ### **Step 5-2: クリア機能実装**
@@ -572,10 +531,12 @@ const handleClearFilters = () => {
 ```
 
 ### **✅ Phase 5 確認項目:**
-- [ ] フィルター状態が正しく表示される
+- [ ] フィルター状態が正しく表示される（Step 5-1で実装済み、ユーザー確認待ち）
+- [ ] 条件なし時に「条件：なし」が表示される（Step 5-1で実装済み、ユーザー確認待ち）
+- [ ] 該当件数が正確に表示される（Step 5-1で実装済み、ユーザー確認待ち）
+- [ ] ラベル付きバッジが適切に表示される（Step 5-1で実装済み、ユーザー確認待ち）
 - [ ] クリア機能が正常に動作する
 - [ ] UI破壊が発生しない
-- [ ] フィルター数が正確に表示される
 
 ---
 
@@ -740,11 +701,11 @@ Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
 - [x] **ブラウザ履歴同期機能完了（2025-07-04）**
 - [x] **実装中問題発見・修正完了（2025-07-04）**
 
-### **Phase 4: フィルタリング統合**
+### **Phase 4: フィルタリング統合** ✅ **完了**
 - [x] Step 4-1: useTodosフック拡張完了 ✅ **（2025-07-04完了）**
 - [x] Step 4-2: todos/page.tsx統合完了 ✅ **（2025-07-04完了）**
-- [ ] Step 4-3: URL復元機能完了
-- [ ] Phase 4 確認項目すべてクリア
+- [x] Step 4-3: URLからフィルター状態復元完了 ✅ **（2025-07-04完了）**
+- [x] Phase 4 確認項目すべてクリア ✅ **（2025-07-04ユーザー確認完了）**
 
 ### **Phase 5: UI状態表示**
 - [ ] Step 5-1: フィルター状態表示完了

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense, useMemo } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
@@ -60,12 +61,17 @@ function TodosPageContent() {
   });
 
   // Phase 4: マスタデータとフィルター状態管理
-  const { isLoading: prioritiesLoading, getPriorityByName } = useTodoPriorities();
-  const { isLoading: statusesLoading, getTodoStatusByName } = useTodoStatuses();
+  const { priorities, isLoading: prioritiesLoading, getPriorityByName } = useTodoPriorities();
+  const { todoStatuses, isLoading: statusesLoading, getTodoStatusByName } = useTodoStatuses();
   const [activeFilters, setActiveFilters] = useState<{
     priorityIds: string[];
     statusIds: string[];
   }>({ priorityIds: [], statusIds: [] });
+
+
+  const hasActiveFilters = useMemo(() => {
+    return activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0;
+  }, [activeFilters.priorityIds.length, activeFilters.statusIds.length]);
 
   // Phase 4: filterParams を useMemo で安定化（無限ループ防止）
   const filterParams = useMemo(() => {
@@ -408,17 +414,64 @@ function TodosPageContent() {
 
           {/* フィルターボタン */}
           <div className="flex flex-col mb-6 bg-white/30 rounded-xl p-4 border border-white/20 shadow">
-            <div className="flex justify-end">
-              <button
-                onClick={handleConditionModalOpen}
-                className="p-3 rounded-full hover:bg-black/10 transition-colors"
-              >
-                <SortAndFilterIcon 
-                  width="22" 
-                  height="22" 
-                  className="text-[#374151]"
-                />
-              </button>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2">
+                {ENABLE_URL_FILTERS && (
+                  <>
+                    {/* フィルター条件表示 */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700 font-medium">条件：</span>
+                      {hasActiveFilters ? (
+                        <div className="flex items-center gap-3">
+                          {/* 優先度バッジ */}
+                          {activeFilters.priorityIds.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-600">[優先度]</span>
+                              {activeFilters.priorityIds.map(id => {
+                                const priority = priorities?.find(p => p.id === id);
+                                return priority ? (
+                                  <PriorityBadge key={priority.id} priority={priority} size="sm" />
+                                ) : null;
+                              })}
+                            </div>
+                          )}
+                          {/* ステータスバッジ */}
+                          {activeFilters.statusIds.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-600">[状態]</span>
+                              {activeFilters.statusIds.map(id => {
+                                const status = todoStatuses?.find(s => s.id === id);
+                                return status ? (
+                                  <StatusBadge key={status.id} status={status} size="sm" />
+                                ) : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">なし</span>
+                      )}
+                    </div>
+                    {/* 該当件数表示 */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-700 font-medium">該当件数：</span>
+                      <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleConditionModalOpen}
+                  className="p-3 rounded-full hover:bg-black/10 transition-colors"
+                >
+                  <SortAndFilterIcon 
+                    width="22" 
+                    height="22" 
+                    className="text-[#374151]"
+                  />
+                </button>
+              </div>
             </div>
           </div>
           {/* ToDoリスト */}
