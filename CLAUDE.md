@@ -74,19 +74,20 @@ const validateField = (value: string, blur = false) => {
 #### todo_priorities（優先度マスタ）
 ```sql
 -- 初期データ
-INSERT INTO todo_priorities (name, display_order, color_code) VALUES
-('高', 1, '#FF3B30'),    -- 赤色
-('中', 2, '#FF9500'),    -- オレンジ色  
-('低', 3, '#34C759');    -- 緑色
+INSERT INTO todo_priorities (id, name, display_order, color_code, is_active) VALUES
+('c95322e9-1504-444e-ba19-5df8c91c6c4d', '高', 1, '#ef4444', true),
+('d78c89d5-1767-4a1e-b6b5-3079a0c3ece2', '中', 2, '#f59e0b', true),
+('1ecdda55-79c8-4677-9d35-2d2c667346f2', '低', 3, '#10b981', true);
 ```
 
 #### todo_statuses（ステータスマスタ）
 ```sql
 -- 初期データ  
-INSERT INTO todo_statuses (name, display_order, color_code) VALUES
-('未着手', 1, '#6B7280'),  -- グレー
-('進行中', 2, '#007AFF'),  -- ブルー
-('完了', 3, '#34C759');    -- 緑色
+INSERT INTO todo_statuses (id, name, display_order, color_code, is_active) VALUES
+('83ecb8ac-8ce3-48b7-8197-e482eecb4b53', '未着手', 1, '#ef4444', true),
+('a982edba-fb07-4fbd-b16e-cf9e443a857d', '処理中', 2, '#f59e0b', true),
+('a96835d2-f146-483c-a8da-850ce15d826d', '処理済', 3, '#3b82f6', true),
+('0a52177a-a2f4-4a1b-9072-e9a8404a65c9', '完了', 4, '#10b981', true);
 ```
 
 ### マスタデータ管理方針
@@ -114,6 +115,12 @@ INSERT INTO todo_statuses (name, display_order, color_code) VALUES
 - `Toast`: トースト通知システム（実装済み）
 - `PriorityBadge` / `StatusBadge`: 優先度・ステータス表示バッジ（実装済み）
 - `CustomSelect`: カスタムセレクトボックス（実装済み）
+- `AppHeader`: アプリケーションヘッダー（実装済み）
+- `MenuModal`: メニューモーダル（実装済み）
+- `PasswordModal`: パスワード変更モーダル（実装済み）
+- `LoadingScreen`: ローディング画面（実装済み）
+- `ProfileForm`: プロフィール編集フォーム（実装済み）
+- `ConfirmModal`: 確認ダイアログ（実装済み）
 
 ### カスタムフック設計
 #### データ管理フック
@@ -179,11 +186,24 @@ npm run build      # 本番ビルド確認
 - **デフォルト値**: カスタムフックで「中」優先度、「未着手」ステータスを自動設定
 
 ### 現在の実装状況
-- **実装済み**: 認証システム、ToDo CRUD、プロフィール管理、モーダル統一UI、トースト通知、マスタデータ管理、フィルタリングUI
+- **実装済み**: 認証システム、ToDo CRUD、プロフィール管理、モーダル統一UI、トースト通知、マスタデータ管理、フィルタリングUI、パスワードリセット機能
 - **実装予定**: フィルタリング機能実装（URLクエリパラメータでの状態管理）、検索機能
 - **制限事項**: メインページ（`/`）はNext.jsデフォルトページのまま
+- **ステータス管理**: 4段階ステータス（未着手→処理中→処理済→完了）で運用
+
+### 実装済みページ一覧
+- `/` - メインページ（Next.jsデフォルト）
+- `/login` - ログイン画面
+- `/signup` - サインアップ画面
+- `/todos` - ToDo一覧画面
+- `/profile` - プロフィール画面
+- `/complete` - 完了画面
+- `/reset-password` - パスワードリセット画面
+- `/reset-password/confirm` - パスワードリセット確認画面
 
 ### 最新の改善履歴
+- **実装済み機能の追加記載**: 実装されているが未記載だった追加コンポーネント（AppHeader、MenuModal、PasswordModal、LoadingScreen、ProfileForm、ConfirmModal）、追加ページ（/profile、/complete、/reset-password関連）、パスワードリセット機能をCLAUDE.mdに追記（2025-01-07）
+- **マスタデータ仕様修正**: 実際のデータベースバックアップに合致するよう、4段階ステータス（未着手・処理中・処理済・完了）と正確な色コードに修正（2025-01-07）
 - **トースト表示時間**: 2秒→3秒に変更（2025-07-03）
 - **プロフィールモーダル**: 一瞬の元値表示問題を解決（2025-07-03）
 - **モーダルUI統一**: 全モーダルで2ボタンレイアウト（キャンセル・保存）に統一（2025-07-03）
