@@ -24,7 +24,6 @@ export default function TodosPage() {
   const { user, isLoading, isLoggingOut, logout, updateUser } = useAuth();
   
   const [error, setError] = useState('');
-  const [showCompletedLoading, setShowCompletedLoading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showTodoEditModal, setShowTodoEditModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<{

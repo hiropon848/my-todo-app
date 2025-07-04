@@ -31,10 +31,10 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Priority情報を取得
-  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
+  const { priorities, isLoading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
 
   // Status情報を取得
-  const { todoStatuses, loading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
+  const { todoStatuses, isLoading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);

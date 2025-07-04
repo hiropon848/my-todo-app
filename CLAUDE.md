@@ -9,7 +9,7 @@ Next.js 15 + TypeScript + Supabaseを使用したToDoアプリケーション。
 - **フロントエンド**: Next.js 15 (App Router) + React 19 + TypeScript 5
 - **スタイリング**: TailwindCSS 3.4 + ガラスモーフィズムデザイン
 - **バックエンド**: Supabase (PostgreSQL + Authentication + RLS)
-- **アニメーション**: Framer Motion 12.18
+- **アニメーション**: Framer Motion 12.18.1
 - **アイコン**: SVG Components（@svgr/webpack）
 - **品質管理**: ESLint + TypeScript strict mode
 
@@ -19,7 +19,7 @@ npm run dev        # 開発サーバー起動 (http://localhost:3000)
 npm run build      # 本番ビルド
 npm run start      # 本番サーバー起動
 npm run lint       # ESLintチェック
-npx tsc --noEmit   # TypeScriptコンパイルチェック
+npm run typecheck  # TypeScriptコンパイルチェック
 ```
 
 ## アーキテクチャ構成
@@ -141,6 +141,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
+環境変数のテンプレートファイル（`.env.local.example`）が用意されています。
+新規セットアップ時は、このファイルをコピーして`.env.local`を作成してください。
+
 ### SVGアイコン処理
 - `@svgr/webpack`で処理
 - 開発時はmemo無効化でHMR問題回避
@@ -151,7 +154,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ### 自動承認コマンド（実装後必須実行）
 ```bash
 npm run lint       # ESLintチェック
-npx tsc --noEmit   # TypeScriptコンパイルチェック
+npm run typecheck  # TypeScriptコンパイルチェック
 npm run build      # 本番ビルド確認
 ```
 

@@ -40,8 +40,8 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   const [titleError, setTitleError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const { priorities, loading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
-  const { todoStatuses, loading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
+  const { priorities, isLoading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
+  const { todoStatuses, isLoading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
 
   useBodyScrollLock(isOpen);
 

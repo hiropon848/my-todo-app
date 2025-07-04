@@ -4,7 +4,7 @@ import { TodoStatus } from '@/types/todoStatus';
 
 export function useTodoStatuses() {
   const [todoStatuses, setTodoStatuses] = useState<TodoStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export function useTodoStatuses() {
   }, []);
 
   const loadTodoStatuses = async () => {
-    setLoading(true);
+    setIsLoading(true);
     setError('');
     try {
       const { data: todoStatusesData, error: todoStatusesError } = await supabase
@@ -31,7 +31,7 @@ export function useTodoStatuses() {
       setError('ToDo状態データの取得中にエラーが発生しました');
       setTodoStatuses([]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -53,7 +53,7 @@ export function useTodoStatuses() {
 
   return {
     todoStatuses,
-    loading,
+    isLoading,
     error,
     loadTodoStatuses,
     getTodoStatusById,

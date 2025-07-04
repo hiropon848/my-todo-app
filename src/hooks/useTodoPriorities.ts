@@ -4,7 +4,7 @@ import { TodoPriority } from '@/types/todoPriority';
 
 export function useTodoPriorities() {
   const [priorities, setPriorities] = useState<TodoPriority[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export function useTodoPriorities() {
   }, []);
 
   const loadPriorities = async () => {
-    setLoading(true);
+    setIsLoading(true);
     setError('');
     try {
       const { data: prioritiesData, error: prioritiesError } = await supabase
@@ -31,7 +31,7 @@ export function useTodoPriorities() {
       setError('優先度データの取得中にエラーが発生しました');
       setPriorities([]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -53,7 +53,7 @@ export function useTodoPriorities() {
 
   return {
     priorities,
-    loading,
+    isLoading,
     error,
     loadPriorities,
     getPriorityById,

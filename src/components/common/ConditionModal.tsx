@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
 import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -20,12 +20,19 @@ export function ConditionModal({ isOpen, onSave, onCancel }: ConditionModalProps
   const [selectedPriorities, setSelectedPriorities] = useState<Set<string>>(new Set());
   const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
 
-  // データ取得
+  // データ取得  
   const { priorities, isLoading: prioritiesLoading } = useTodoPriorities();
   const { todoStatuses, isLoading: statusesLoading } = useTodoStatuses();
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
+
+  const handleCancel = useCallback(() => {
+    setShowModal(false);
+    setTimeout(() => {
+      onCancel();
+    }, 300);
+  }, [onCancel]);
 
   // モーダルアニメーション制御
   useEffect(() => {
@@ -49,7 +56,7 @@ export function ConditionModal({ isOpen, onSave, onCancel }: ConditionModalProps
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
-  }, [isOpen]);
+  }, [isOpen, handleCancel]);
 
   const handlePriorityToggle = (priorityId: string) => {
     const newSelected = new Set(selectedPriorities);
@@ -94,13 +101,6 @@ export function ConditionModal({ isOpen, onSave, onCancel }: ConditionModalProps
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleCancel = () => {
-    setShowModal(false);
-    setTimeout(() => {
-      onCancel();
-    }, 300);
   };
 
   // 背景クリックでモーダルを閉じる
