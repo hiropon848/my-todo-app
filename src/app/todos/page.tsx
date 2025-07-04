@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
@@ -20,6 +20,9 @@ import { StatusBadge } from '@/components/common/StatusBadge';
 import { useProfile } from '@/hooks/useProfile';
 // Phase 2: URLフィルター管理フックをインポート
 import { useURLFilters } from '@/hooks/useURLFilters';
+// Phase 4: 名前→ID変換のためのマスタデータフック
+import { useTodoPriorities } from '@/hooks/useTodoPriorities';
+import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 
 function TodosPageContent() {
   // Phase 3: 機能フラグ（段階的有効化用）
@@ -56,7 +59,24 @@ function TodosPageContent() {
     statuses: new Set<string>()
   });
 
-  // useTodosカスタムフック
+  // Phase 4: マスタデータとフィルター状態管理
+  const { isLoading: prioritiesLoading, getPriorityByName } = useTodoPriorities();
+  const { isLoading: statusesLoading, getTodoStatusByName } = useTodoStatuses();
+  const [activeFilters, setActiveFilters] = useState<{
+    priorityIds: string[];
+    statusIds: string[];
+  }>({ priorityIds: [], statusIds: [] });
+
+  // Phase 4: filterParams を useMemo で安定化（無限ループ防止）
+  const filterParams = useMemo(() => {
+    if (!ENABLE_URL_FILTERS) return undefined;
+    return {
+      priorityIds: activeFilters.priorityIds,
+      statusIds: activeFilters.statusIds
+    };
+  }, [ENABLE_URL_FILTERS, activeFilters.priorityIds, activeFilters.statusIds]);
+
+  // Phase 4: useTodosカスタムフック（フィルターパラメータ付き）
   const { 
     todos, 
     isLoading: loading, 
@@ -68,7 +88,7 @@ function TodosPageContent() {
     isAddTodoLoading: _isAddTodoLoading,
     isUpdateTodoLoading: _isUpdateTodoLoading,
     isDeleteTodoLoading: _isDeleteTodoLoading
-  } = useTodos(user?.id || null);
+  } = useTodos(user?.id || null, filterParams);
   
   // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
   void _isToggleLoading;
@@ -251,30 +271,61 @@ function TodosPageContent() {
   // ログアウト処理（Contextのlogout関数を使用）
   const handleLogout = logout;
 
-  // Phase 3: ConditionModal保存ハンドラー（URL更新機能）
+  // Phase 4: ConditionModal保存ハンドラー（フィルター統合）
   const handleConditionSave = async (priorities: Set<string>, statuses: Set<string>) => {
     if (ENABLE_URL_FILTERS) {
-      const priorityIds = Array.from(priorities);
-      const statusIds = Array.from(statuses);
-      updateFilters(priorityIds, statusIds);
+      const priorityNames = Array.from(priorities);
+      const statusNames = Array.from(statuses);
+      
+      // 名前→IDの変換
+      const priorityIds = priorityNames
+        .map(name => getPriorityByName(name)?.id)
+        .filter((id): id is string => id !== undefined);
+      const statusIds = statusNames
+        .map(name => getTodoStatusByName(name)?.id)
+        .filter((id): id is string => id !== undefined);
+      
+      console.log('🔄 フィルター保存:', {
+        priorityNames, statusNames,
+        priorityIds, statusIds
+      });
+      
+      // URL更新（名前ベース）
+      updateFilters(priorityNames, statusNames);
+      // アクティブフィルター更新（IDベース）
+      setActiveFilters({ priorityIds, statusIds });
     }
     setShowConditionModal(false);
     return true;
   };
 
-  // Phase 3: URL変化の監視とConditionModal初期値の自動更新
+  // Phase 4: URL変化の監視とフィルター状態の統合更新
   useEffect(() => {
-    if (ENABLE_URL_FILTERS) {
-      console.log('📝 ConditionModal初期値更新:', { 
+    if (ENABLE_URL_FILTERS && !prioritiesLoading && !statusesLoading) {
+      console.log('🔄 URL変化検知:', { 
         priorities: currentFilters.priorities, 
         statuses: currentFilters.statuses 
       });
+      
+      // ConditionModal初期値更新
       setConditionModalInitialState({
         priorities: new Set(currentFilters.priorities),
         statuses: new Set(currentFilters.statuses)
       });
+      
+      // アクティブフィルター更新（名前→IDの変換）
+      const priorityIds = currentFilters.priorities
+        ?.map(name => getPriorityByName(name)?.id)
+        .filter((id): id is string => id !== undefined) || [];
+      const statusIds = currentFilters.statuses
+        ?.map(name => getTodoStatusByName(name)?.id)
+        .filter((id): id is string => id !== undefined) || [];
+      
+      console.log('🎯 アクティブフィルター更新:', { priorityIds, statusIds });
+      setActiveFilters({ priorityIds, statusIds });
     }
-  }, [ENABLE_URL_FILTERS, currentFilters]); // currentFiltersの変化を監視
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ENABLE_URL_FILTERS, prioritiesLoading, statusesLoading, currentFilters]); // currentFiltersも監視（関数は無限ループ防止のため除外）
 
   // Phase 3: ConditionModalを開く際の初期値設定（機能フラグで制御）
   const handleConditionModalOpen = () => {
@@ -311,7 +362,7 @@ function TodosPageContent() {
   }
 
   // ログアウト処理中でない場合のみ、他の条件を評価
-  if (!isLoggingOut && (isLoading || !user || loading)) {
+  if (!isLoggingOut && (isLoading || !user || loading || prioritiesLoading || statusesLoading)) {
     if (process.env.NODE_ENV === 'development') {
       console.log('📺 PROBLEMATIC: TodosPage showing LoadingScreen', {
         reason: isLoading ? 'isLoading' : !user ? 'no user' : 'loading',

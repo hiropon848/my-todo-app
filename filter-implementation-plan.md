@@ -409,7 +409,7 @@ export function useTodos(userId: string | null, filterParams?: {
 - 既存機能への影響なし（backward compatibility完全維持）
 - 全品質チェック完了（TypeScript, ESLint, Build）
 
-### **Step 4-2: todos/page.tsxでの統合**
+### **Step 4-2: todos/page.tsxでの統合** ✅ **完了**
 
 **ファイル編集**: `src/app/todos/page.tsx`
 
@@ -479,6 +479,19 @@ export default function TodosPage() {
       });
     }
   }, [ENABLE_URL_FILTERS, prioritiesLoading, statusesLoading]);
+```
+
+**📅 実装完了日時**: 2025-07-04
+**🔍 実装詳細**:
+- マスタデータフック（useTodoPriorities, useTodoStatuses）統合
+- activeFilters状態でID変換後のフィルター値を管理
+- useTodosにfilterParamsを渡すよう修正（useMemoで安定化）
+- handleConditionSaveで名前→ID変換ロジックを実装
+- URL変化監視とアクティブフィルター更新を統合（ブラウザバック対応）
+- **重要修正**: 無限ループ問題を解決（useMemo、useEffect依存配列最適化）
+- **重要修正**: ブラウザバック時のToDo一覧更新問題を解決
+- ESLint警告解決（eslint-disable-next-line追加）
+- 全品質チェック完了、ユーザー確認完了
 }
 ```
 
@@ -729,7 +742,7 @@ Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
 
 ### **Phase 4: フィルタリング統合**
 - [x] Step 4-1: useTodosフック拡張完了 ✅ **（2025-07-04完了）**
-- [ ] Step 4-2: todos/page.tsx統合完了
+- [x] Step 4-2: todos/page.tsx統合完了 ✅ **（2025-07-04完了）**
 - [ ] Step 4-3: URL復元機能完了
 - [ ] Phase 4 確認項目すべてクリア
 
@@ -742,6 +755,23 @@ Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
 - [ ] Step 6-1: 機能フラグ削除完了
 - [ ] Step 6-2: 最終確認・最適化完了
 - [ ] Phase 6 確認項目すべてクリア
+
+---
+
+## **🚀 今後の改善予定**
+
+### **ユーザビリティ改善**
+
+#### **Loading表示の最適化**
+- **現状**: フィルター条件変更時に「Loading...」が一瞬表示される
+- **理由**: データベースクエリ再実行時の正常な動作
+- **改善案**:
+  1. **スケルトンローディング**: 既存のToDo項目をグレーアウト表示
+  2. **ローディング時間短縮**: クライアントサイドフィルタリング（大量データ時は非推奨）
+  3. **専用メッセージ**: 「フィルタリング中...」などのカスタムメッセージ
+  4. **トランジション効果**: より滑らかな画面遷移の実装
+- **優先度**: 中（基本機能完了後の改善項目）
+- **実装時期**: Phase 6完了後またはPhase 7として実装
 
 ---
 
