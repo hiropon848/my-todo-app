@@ -201,28 +201,29 @@ export default function TodosPage() {
 
 ## **Phase 3: URL管理機能実装（段階的有効化）**
 
-### **Step 3-1: 機能フラグ導入**
+### **Step 3-1: 機能フラグ導入** ✅ **完了**
 
 **ファイル編集**: `src/app/todos/page.tsx`
 
 ```typescript
 // src/app/todos/page.tsx
-const ENABLE_URL_FILTERS = false; // 開発時にtrueに変更
-
 export default function TodosPage() {
-  const { getFiltersFromURL, updateFilters } = useURLFilters();
+  // Phase 3: 機能フラグ（段階的有効化用）
+  const ENABLE_URL_FILTERS = false; // Phase 3-2でtrueに変更予定
+
+  const { getFiltersFromURL } = useURLFilters();
   
   // 機能フラグで制御
   const handleConditionModalOpen = () => {
     if (ENABLE_URL_FILTERS) {
-      // URL フィルターから復元
+      // Phase 3-2で実装予定: URLフィルターから復元
       const urlFilters = getFiltersFromURL();
       setConditionModalInitialState({
         priorities: new Set(urlFilters.priorities),
         statuses: new Set(urlFilters.statuses)
       });
     } else {
-      // 既存動作を維持
+      // 既存動作を維持（Phase 2と同じ）
       setConditionModalInitialState({
         priorities: new Set(),
         statuses: new Set()
@@ -233,7 +234,16 @@ export default function TodosPage() {
 }
 ```
 
-### **Step 3-2: useURLFiltersのURL更新機能実装**
+**📅 実装完了日時**: 2025-07-04
+**🔍 実装詳細**:
+- `ENABLE_URL_FILTERS = false` 機能フラグを todos/page.tsx に追加
+- `handleConditionModalOpen` を機能フラグで分岐実装
+- 機能フラグfalse時: 既存動作を完全に維持（Phase 2と同一）
+- 機能フラグtrue時: URLフィルターから復元（Phase 3-2で有効化予定）
+- 未使用eslint-disableコメント削除、`getFiltersFromURL`の使用で警告解消
+- false/true両方でビルド・動作確認済み、既存機能への影響なし
+
+### **Step 3-2: useURLFiltersのURL更新機能実装** ✅ **完了**
 
 **ファイル編集**: `src/hooks/useURLFilters.ts`
 
@@ -272,6 +282,16 @@ export function useURLFilters() {
   return { getFiltersFromURL, updateFilters, isReady: true };
 }
 ```
+
+**📅 実装完了日時**: 2025-07-04
+**🔍 実装詳細**:
+- useSearchParams と useRouter を有効化、実際のURL読み取り・更新機能を実装
+- `getFiltersFromURL`: URLパラメータを解析して配列で返す機能を実装
+- `updateFilters`: URLSearchParams を使用してURL更新機能を実装
+- 空配列の場合はパラメータ削除、値がある場合はカンマ区切りで設定
+- `router.replace` で scroll:false を指定してページスクロール防止
+- **重要**: todos/page.tsx に Suspense境界を追加してNext.js 15要件を満たす
+- TodosPageContent と TodosPage に分離、Suspense でラップ
 
 ### **Step 3-3: 機能フラグテスト**
 
@@ -637,9 +657,9 @@ Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
 - [x] Phase 2 確認項目すべてクリア
 - [x] **ユーザー確認完了（2025-07-04）**
 
-### **Phase 3: URL管理機能**
-- [ ] Step 3-1: 機能フラグ導入完了
-- [ ] Step 3-2: URL更新機能実装完了
+### **Phase 3: URL管理機能** 🔄 **実装中**
+- [x] Step 3-1: 機能フラグ導入完了 ✅ **（2025-07-04完了）**
+- [x] Step 3-2: URL更新機能実装完了 ✅ **（2025-07-04完了）**
 - [ ] Step 3-3: 機能フラグテスト完了
 - [ ] Phase 3 確認項目すべてクリア
 

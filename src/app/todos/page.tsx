@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
@@ -21,7 +21,10 @@ import { useProfile } from '@/hooks/useProfile';
 // Phase 2: URLフィルター管理フックをインポート
 import { useURLFilters } from '@/hooks/useURLFilters';
 
-export default function TodosPage() {
+function TodosPageContent() {
+  // Phase 3: 機能フラグ（段階的有効化用）
+  const ENABLE_URL_FILTERS = false; // Phase 3-2でtrueに変更予定
+
   const router = useRouter();
   const { user, isLoading, isLoggingOut, logout, updateUser } = useAuth();
   
@@ -47,8 +50,6 @@ export default function TodosPage() {
   const [showConditionModal, setShowConditionModal] = useState(false);
 
   // Phase 2: URLフィルター管理とConditionModal初期値状態
-  // Phase 3で使用予定のためESLintエラー回避
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { getFiltersFromURL } = useURLFilters();
   const [conditionModalInitialState, setConditionModalInitialState] = useState({
     priorities: new Set<string>(),
@@ -250,13 +251,22 @@ export default function TodosPage() {
   // ログアウト処理（Contextのlogout関数を使用）
   const handleLogout = logout;
 
-  // Phase 2: ConditionModalを開く際の初期値設定（既存動作を維持）
+  // Phase 3: ConditionModalを開く際の初期値設定（機能フラグで制御）
   const handleConditionModalOpen = () => {
-    // 現在は空のSet（既存動作を維持、Phase 3でURL復元を実装予定）
-    setConditionModalInitialState({
-      priorities: new Set(),
-      statuses: new Set()
-    });
+    if (ENABLE_URL_FILTERS) {
+      // Phase 3-2で実装予定: URLフィルターから復元
+      const urlFilters = getFiltersFromURL();
+      setConditionModalInitialState({
+        priorities: new Set(urlFilters.priorities),
+        statuses: new Set(urlFilters.statuses)
+      });
+    } else {
+      // 既存動作を維持（Phase 2と同じ）
+      setConditionModalInitialState({
+        priorities: new Set(),
+        statuses: new Set()
+      });
+    }
     setShowConditionModal(true);
   };
 
@@ -429,5 +439,13 @@ export default function TodosPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function TodosPage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <TodosPageContent />
+    </Suspense>
   );
 } 

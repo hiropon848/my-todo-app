@@ -1,43 +1,68 @@
 'use client';
 
 // URLクエリパラメータでフィルター状態を管理するカスタムフック
-// Phase 1: 基盤準備で作成 - まずは読み取り専用で実装
+// Phase 3 Step 3-2: URL更新機能実装
 
-// Phase 2: useSearchParams一時的に無効化（Suspense boundary問題回避）
-// import { useSearchParams, useRouter } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { URLFilterParams } from '@/types/filter';
 
 /**
  * URLクエリパラメータでフィルター状態を管理するフック
- * Phase 1では読み取り専用機能のみ実装、Phase 3でURL更新機能を実装予定
+ * Phase 3で本実装: URL読み取り・更新機能を実装
  */
 export function useURLFilters() {
-  // Phase 2: Suspense boundary問題回避のため一時的に無効化
-  // Phase 3で適切なSuspense境界とともに実装予定
-  // const searchParams = useSearchParams();
-  // Phase 3で使用予定のためESLintエラー回避
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const [isReady] = useState(false); // Phase 3で使用予定
+  const [isReady, setIsReady] = useState(false);
+  
+  // コンポーネントマウント時にready状態を設定
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
   
   /**
    * URLからフィルターパラメータを読み取る
-   * Phase 2: 安全のため空配列を返す（Phase 3で本実装）
+   * Phase 3: 実際にURLパラメータを解析して返す
    */
   const getFiltersFromURL = (): URLFilterParams => {
-    // Phase 2: Suspense boundary問題回避のため常に空配列を返す
-    return { priorities: [], statuses: [] };
+    if (!isReady) {
+      return { priorities: [], statuses: [] };
+    }
+    
+    const priorities = searchParams.get('priorities')?.split(',').filter(p => p.trim()) || [];
+    const statuses = searchParams.get('statuses')?.split(',').filter(s => s.trim()) || [];
+    
+    return { priorities, statuses };
   };
   
   /**
    * URLにフィルターパラメータを設定する
-   * Phase 1ではプレースホルダー実装、Phase 3で本実装予定
+   * Phase 3: 実際にURLを更新する機能を実装
    */
   const updateFilters = (priorities: string[], statuses: string[]) => {
-    // Phase 3で実装予定 - 現在はコンソールログのみ
-    console.log('updateFilters called (Phase 1 placeholder)', { priorities, statuses });
+    if (!isReady) {
+      console.log('updateFilters: not ready yet');
+      return;
+    }
+    
+    const params = new URLSearchParams(searchParams);
+    
+    // 空の場合はパラメータを削除
+    if (priorities.length === 0) {
+      params.delete('priorities');
+    } else {
+      params.set('priorities', priorities.join(','));
+    }
+    
+    if (statuses.length === 0) {
+      params.delete('statuses');
+    } else {
+      params.set('statuses', statuses.join(','));
+    }
+    
+    // ページ遷移ではなくURLの更新のみ（scroll無効化）
+    router.replace(`?${params.toString()}`, { scroll: false });
   };
   
   return { 
