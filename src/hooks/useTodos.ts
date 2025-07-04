@@ -3,7 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
 
-export function useTodos(userId: string | null) {
+export function useTodos(userId: string | null, filterParams?: {
+  priorityIds?: string[];
+  statusIds?: string[];
+}) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,15 +27,28 @@ export function useTodos(userId: string | null) {
     setError('');
     (async () => {
       try {
-        const { data: todosData, error: todosError } = await supabase
+        // 基本クエリを構築（既存と同じ）
+        let query = supabase
           .from('todos')
           .select(`
             *,
             priority:todo_priorities(*),
             status:todo_statuses(*)
           `)
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+          .eq('user_id', userId);
+        
+        // フィルターパラメータが存在する場合のみ適用（既存動作への影響なし）
+        if (filterParams?.priorityIds?.length) {
+          query = query.in('todo_priority_id', filterParams.priorityIds);
+        }
+        if (filterParams?.statusIds?.length) {
+          query = query.in('todo_status_id', filterParams.statusIds);
+        }
+        
+        // 並び順（既存と同じ）
+        query = query.order('created_at', { ascending: false });
+        
+        const { data: todosData, error: todosError } = await query;
         
         if (todosError) {
           throw todosError;
@@ -46,7 +62,7 @@ export function useTodos(userId: string | null) {
         setIsLoading(false);
       }
     })();
-  }, [userId]);
+  }, [userId, filterParams]); // filterParamsの変化も監視
 
   // ToDo削除ロジック
   const deleteTodo = async (id: string) => {
