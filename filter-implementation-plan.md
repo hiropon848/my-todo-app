@@ -573,6 +573,41 @@ export default function TodosPage() {
 - [ ] ユーザビリティ確認
 - [ ] レスポンシブ対応確認
 - [ ] アクセシビリティ確認
+- [ ] **リアルタイム更新問題の修正**：フィルタリング適用中にToDoを編集した際、フィルター条件に合わなくなったToDoがリストから消えない問題の解決
+
+#### **🚨 発見された重要問題: ToDoリアルタイム更新**
+
+**問題の詳細:**
+1. 状態「未着手」でフィルタリング実行
+2. 未着手のToDoが表示される
+3. 表示されているToDoを編集して状態を「完了」に変更
+4. **問題**: ToDoリストから該当項目が消えない、該当件数も更新されない
+
+**原因分析:**
+- ToDoの編集後に**フィルタリングが再実行されない**ため
+- 編集されたToDoが条件に合わなくなってもリストに残る
+- 該当件数も古い状態のまま
+
+**解決方法:**
+```typescript
+// src/hooks/useTodos.ts
+// updateTodo成功時にデータを再取得するよう修正
+const updateTodo = async (id: string, title: string, text: string, priorityId?: string, statusId?: string) => {
+  try {
+    const result = await updateTodoInDB(id, title, text, priorityId, statusId);
+    if (result.success) {
+      // 編集成功時に即座にデータを再取得（フィルタリング再実行）
+      await fetchTodos(); // 現在のフィルタリング条件で再取得
+    }
+    return result;
+  } catch (error) {
+    // エラーハンドリング
+  }
+};
+```
+
+**実装優先度**: 高（ユーザビリティに直結する重要な問題）
+**対象ファイル**: `src/hooks/useTodos.ts`
 
 ---
 
