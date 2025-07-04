@@ -3,7 +3,9 @@
 // URLクエリパラメータでフィルター状態を管理するカスタムフック
 // Phase 1: 基盤準備で作成 - まずは読み取り専用で実装
 
-import { useSearchParams, useRouter } from 'next/navigation';
+// Phase 2: useSearchParams一時的に無効化（Suspense boundary問題回避）
+// import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { URLFilterParams } from '@/types/filter';
 
@@ -12,7 +14,9 @@ import { URLFilterParams } from '@/types/filter';
  * Phase 1では読み取り専用機能のみ実装、Phase 3でURL更新機能を実装予定
  */
 export function useURLFilters() {
-  const searchParams = useSearchParams();
+  // Phase 2: Suspense boundary問題回避のため一時的に無効化
+  // Phase 3で適切なSuspense境界とともに実装予定
+  // const searchParams = useSearchParams();
   // Phase 3で使用予定のためESLintエラー回避
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
@@ -20,12 +24,11 @@ export function useURLFilters() {
   
   /**
    * URLからフィルターパラメータを読み取る
-   * ?priorities=high,medium&statuses=todo,progress 形式をパース
+   * Phase 2: 安全のため空配列を返す（Phase 3で本実装）
    */
   const getFiltersFromURL = (): URLFilterParams => {
-    const priorities = searchParams.get('priorities')?.split(',').filter(Boolean) || [];
-    const statuses = searchParams.get('statuses')?.split(',').filter(Boolean) || [];
-    return { priorities, statuses };
+    // Phase 2: Suspense boundary問題回避のため常に空配列を返す
+    return { priorities: [], statuses: [] };
   };
   
   /**

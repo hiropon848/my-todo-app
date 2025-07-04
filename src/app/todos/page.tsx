@@ -18,6 +18,8 @@ import SortAndFilterIcon from '@/icons/sort-and-filter.svg';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useProfile } from '@/hooks/useProfile';
+// Phase 2: URLフィルター管理フックをインポート
+import { useURLFilters } from '@/hooks/useURLFilters';
 
 export default function TodosPage() {
   const router = useRouter();
@@ -43,6 +45,15 @@ export default function TodosPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTodoAddModal, setShowTodoAddModal] = useState(false);
   const [showConditionModal, setShowConditionModal] = useState(false);
+
+  // Phase 2: URLフィルター管理とConditionModal初期値状態
+  // Phase 3で使用予定のためESLintエラー回避
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { getFiltersFromURL } = useURLFilters();
+  const [conditionModalInitialState, setConditionModalInitialState] = useState({
+    priorities: new Set<string>(),
+    statuses: new Set<string>()
+  });
 
   // useTodosカスタムフック
   const { 
@@ -239,6 +250,16 @@ export default function TodosPage() {
   // ログアウト処理（Contextのlogout関数を使用）
   const handleLogout = logout;
 
+  // Phase 2: ConditionModalを開く際の初期値設定（既存動作を維持）
+  const handleConditionModalOpen = () => {
+    // 現在は空のSet（既存動作を維持、Phase 3でURL復元を実装予定）
+    setConditionModalInitialState({
+      priorities: new Set(),
+      statuses: new Set()
+    });
+    setShowConditionModal(true);
+  };
+
   // ログアウト処理中の表示（最優先・他の条件を完全に無視）
   if (isLoggingOut) {
     if (process.env.NODE_ENV === 'development') {
@@ -296,7 +317,7 @@ export default function TodosPage() {
           <div className="flex flex-col mb-6 bg-white/30 rounded-xl p-4 border border-white/20 shadow">
             <div className="flex justify-end">
               <button
-                onClick={() => setShowConditionModal(true)}
+                onClick={handleConditionModalOpen}
                 className="p-3 rounded-full hover:bg-black/10 transition-colors"
               >
                 <SortAndFilterIcon 
@@ -394,6 +415,8 @@ export default function TodosPage() {
         isOpen={showConditionModal}
         onSave={async () => { setShowConditionModal(false); return true; }}
         onCancel={() => setShowConditionModal(false)}
+        initialPriorities={conditionModalInitialState.priorities}
+        initialStatuses={conditionModalInitialState.statuses}
       />
 
       {/* トースト通知 */}

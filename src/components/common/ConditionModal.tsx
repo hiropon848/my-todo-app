@@ -12,13 +12,24 @@ interface ConditionModalProps {
   isOpen: boolean;
   onSave: (selectedPriorities: Set<string>, selectedStatuses: Set<string>) => Promise<boolean>;
   onCancel: () => void;
+  // Phase 2: 初期値props追加（デフォルト値でUI破壊防止）
+  initialPriorities?: Set<string>;
+  initialStatuses?: Set<string>;
 }
 
-export function ConditionModal({ isOpen, onSave, onCancel }: ConditionModalProps) {
+export function ConditionModal({ 
+  isOpen, 
+  onSave, 
+  onCancel,
+  // デフォルト値で既存動作を完全に維持
+  initialPriorities = new Set(),
+  initialStatuses = new Set()
+}: ConditionModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [selectedPriorities, setSelectedPriorities] = useState<Set<string>>(new Set());
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
+  // Phase 2: 初期値をpropsから設定（既存動作維持）
+  const [selectedPriorities, setSelectedPriorities] = useState<Set<string>>(initialPriorities);
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(initialStatuses);
 
   // データ取得  
   const { priorities, isLoading: prioritiesLoading } = useTodoPriorities();
@@ -43,6 +54,14 @@ export function ConditionModal({ isOpen, onSave, onCancel }: ConditionModalProps
       setShowModal(false);
     }
   }, [isOpen]);
+
+  // Phase 2: 初期値復元（モーダルが開かれるたびに初期値を設定）
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedPriorities(new Set(initialPriorities));
+      setSelectedStatuses(new Set(initialStatuses));
+    }
+  }, [isOpen, initialPriorities, initialStatuses]);
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {

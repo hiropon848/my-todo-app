@@ -176,11 +176,26 @@ export default function TodosPage() {
 ```
 
 ### **✅ Phase 2 確認項目:**
-- [ ] ConditionModalが正常に開閉する
-- [ ] 既存の選択・保存動作が変わらない
-- [ ] UIレイアウトが崩れない
-- [ ] TypeScriptエラーが発生しない
-- [ ] フィルターボタンクリック時の動作が変わらない
+- [x] ConditionModalが正常に開閉する
+- [x] 既存の選択・保存動作が変わらない
+- [x] UIレイアウトが崩れない
+- [x] TypeScriptエラーが発生しない
+- [x] フィルターボタンクリック時の動作が変わらない
+- [x] `npm run typecheck` が通る
+- [x] `npm run lint` が通る
+- [x] `npm run build` が成功する
+- [x] IDEでエラー・警告なし
+- [x] ブラウザでの動作確認完了（ユーザー確認済み）
+
+**📅 実装完了日時**: 2025-07-04
+**🔍 実装詳細**:
+- ConditionModalに `initialPriorities`, `initialStatuses` オプショナルprops追加
+- デフォルト値で既存動作を完全に維持、初期値復元用useEffect追加
+- todos/page.tsxに `useURLFilters` インポート、`conditionModalInitialState` 状態追加
+- `handleConditionModalOpen` ハンドラー関数作成、フィルターボタンのonClick変更
+- ConditionModalに新しいpropsを追加、既存のロジックは一切変更なし
+- **重要**: Next.js 15のSuspense boundary問題を回避、useSearchParamsを一時的に無効化
+- Phase 3で適切なSuspense境界とともに実装予定、ESLintエラーすべて解決済み
 
 ---
 
@@ -586,6 +601,20 @@ feat: Phase1 フィルター基盤準備完了
 Phase 1: 基盤準備（UI影響なし） ✅ 完了
 ```
 
+**🎯 Phase 2 実装済みコミットメッセージ:**
+```
+feat: Phase2 ConditionModal拡張完了
+
+- ConditionModalに initialPriorities, initialStatuses オプショナルprops追加
+- デフォルト値で既存動作完全維持、初期値復元useEffect追加
+- todos/page.tsx: useURLFilters統合、conditionModalInitialState状態追加
+- handleConditionModalOpen作成、フィルターボタンonClick変更
+- Next.js 15 Suspense boundary問題回避、useSearchParams一時無効化
+- 全確認項目クリア、ユーザー動作確認完了
+
+Phase 2: ConditionModal拡張（UI破壊防止） ✅ 完了
+```
+
 ### **注意事項**
 - 各Phaseで必ず動作確認を行う
 - 問題が発生した場合は即座に前の段階に戻す
@@ -602,10 +631,11 @@ Phase 1: 基盤準備（UI影響なし） ✅ 完了
 - [x] Phase 1 確認項目すべてクリア
 - [x] **ユーザー確認完了（2025-07-04）**
 
-### **Phase 2: ConditionModal拡張**
-- [ ] Step 2-1: ConditionModal props拡張完了
-- [ ] Step 2-2: todos/page.tsx安全統合完了
-- [ ] Phase 2 確認項目すべてクリア
+### **Phase 2: ConditionModal拡張** ✅ **完了**
+- [x] Step 2-1: ConditionModal props拡張完了
+- [x] Step 2-2: todos/page.tsx安全統合完了
+- [x] Phase 2 確認項目すべてクリア
+- [x] **ユーザー確認完了（2025-07-04）**
 
 ### **Phase 3: URL管理機能**
 - [ ] Step 3-1: 機能フラグ導入完了
