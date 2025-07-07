@@ -56,10 +56,11 @@ function TodosPageContent() {
   const { getSortFromURL, updateSort, currentSort } = useTodoSort();
   // Phase 8: 後続ステップで使用予定のため未使用変数警告を抑制
   void getSortFromURL;
-  void updateSort;
   const [conditionModalInitialState, setConditionModalInitialState] = useState({
     priorities: new Set<string>(),
-    statuses: new Set<string>()
+    statuses: new Set<string>(),
+    // Phase 8: ソート機能強化でソート初期値を追加
+    sortOption: 'created_desc' as SortOption
   });
 
   const { priorities, isLoading: prioritiesLoading, getPriorityByName } = useTodoPriorities();
@@ -320,6 +321,7 @@ function TodosPageContent() {
         console.log('🔄 URL変化検知:', { 
           priorities: currentFilters.priorities, 
           statuses: currentFilters.statuses,
+          currentSort,
           availablePriorities: priorities.map(p => p.name),
           availableStatuses: todoStatuses.map(s => s.name)
         });
@@ -328,7 +330,9 @@ function TodosPageContent() {
       // ConditionModal初期値更新
       setConditionModalInitialState({
         priorities: new Set(currentFilters.priorities),
-        statuses: new Set(currentFilters.statuses)
+        statuses: new Set(currentFilters.statuses),
+        // Phase 8: ソート機能強化でソート状態も復元
+        sortOption: currentSort
       });
       
       // アクティブフィルター更新（名前→IDの変換）
@@ -383,22 +387,26 @@ function TodosPageContent() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prioritiesLoading, statusesLoading, currentFilters, priorities, todoStatuses]); // マスタデータも監視
+  }, [prioritiesLoading, statusesLoading, currentFilters, priorities, todoStatuses, currentSort]); // マスタデータとソート状態も監視
 
   const handleConditionModalOpen = () => {
     const urlFilters = getFiltersFromURL();
     if (process.env.NODE_ENV === 'development') {
       console.log('🚀 ConditionModal開く:', { 
         urlFilters,
+        currentSort,
         currentState: {
           priorities: Array.from(conditionModalInitialState.priorities),
-          statuses: Array.from(conditionModalInitialState.statuses)
+          statuses: Array.from(conditionModalInitialState.statuses),
+          sortOption: conditionModalInitialState.sortOption
         }
       });
     }
     setConditionModalInitialState({
       priorities: new Set(urlFilters.priorities),
-      statuses: new Set(urlFilters.statuses)
+      statuses: new Set(urlFilters.statuses),
+      // Phase 8: ソート機能強化でソート状態も復元
+      sortOption: currentSort
     });
     setShowConditionModal(true);
   };
@@ -613,7 +621,7 @@ function TodosPageContent() {
         onCancel={() => setShowConditionModal(false)}
         initialPriorities={conditionModalInitialState.priorities}
         initialStatuses={conditionModalInitialState.statuses}
-        initialSortOption={currentSort}
+        initialSortOption={conditionModalInitialState.sortOption}
       />
 
       {/* トースト通知 */}
