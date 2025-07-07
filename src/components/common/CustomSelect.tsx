@@ -65,8 +65,8 @@ export function CustomSelect({
     
     const rect = containerRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    // 概算の高さ（少数項目なら自然な高さ、多数項目なら200px）
-    const estimatedHeight = options.length <= 5 ? options.length * 40 + 16 : 200;
+    // 実測値に基づく高さ計算（46px/項目 + container padding）
+    const estimatedHeight = options.length <= 5 ? options.length * 46 + 8 : 200;
     
     // 下に表示する余裕があるかチェック
     const spaceBelow = viewportHeight - rect.bottom;

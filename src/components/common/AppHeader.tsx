@@ -36,7 +36,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </button>
         <span className="text-xl font-bold text-text absolute left-1/2 transform -translate-x-1/2">{title}</span>
         <button
-          className="p-1 transition-colors"
+          className="rounded-full hover:bg-black/10 transition-colors"
           onClick={onAddClick}
         >
           <AddIcon 
