@@ -52,13 +52,13 @@
 
 ## 実装ステップ詳細
 
-### Step 1: ソート型定義とフック作成
+### ✅ Step 1: ソート型定義とフック作成（完了）
 **目的**: ソート機能の基盤作成
 
 **実装内容**:
-1. ソート関連の型定義追加
+1. ソート関連の型定義追加（`/src/types/todo.ts`）
    ```typescript
-   type SortOption = 
+   export type SortOption = 
      | 'created_desc'      // 作成日時新しい順
      | 'created_asc'       // 作成日時古い順  
      | 'updated_desc'      // 更新日時新しい順
@@ -69,109 +69,200 @@
      | 'state_no_progress' // 状態未進捗順
    ```
 
-2. `useTodoSort`カスタムフック作成
+2. URLパラメータ型拡張（`/src/types/filter.ts`）
+   ```typescript
+   export interface URLFilterParams {
+     priorities?: string[];
+     statuses?: string[];
+     sort?: string; // Phase 8: ソート機能強化で追加
+   }
+   ```
+
+3. `useTodoSort`カスタムフック作成（`/src/hooks/useTodoSort.ts`）
    - URLパラメータからソート状態を読み取り
    - ソート状態の更新関数
+   - バリデーション機能（有効なソートオプションのみ許可）
    - デフォルトソート設定（created_desc）
+   - 既存のuseURLFiltersフックと同様のパターンで実装
 
-**検証項目**:
-- TypeScript型チェック
-- URLパラメータの読み書き確認
+**完了済み検証項目**:
+- ✅ TypeScript型チェック: エラーなし
+- ✅ ESLint: 警告・エラーなし
+- ✅ URLパラメータの読み書き確認: 正常動作
+- ✅ 既存機能への影響: なし
 
-### Step 2: useTodosフックの拡張
+### ✅ Step 2: useTodosフックの拡張（完了）
 **目的**: ソート機能をデータ取得ロジックに統合
 
 **実装内容**:
-1. `useTodos`にソートパラメータ追加
-2. ソートオプションに応じたクエリ構築
+1. `useTodos`パラメータ拡張
    ```typescript
-   switch (sortOption) {
-     case 'created_desc':
-       query = query.order('created_at', { ascending: false });
-       break;
-     case 'created_asc':
-       query = query.order('created_at', { ascending: true });
-       break;
-     case 'updated_desc':
-       query = query.order('updated_at', { ascending: false });
-       break;
-     case 'updated_asc':
-       query = query.order('updated_at', { ascending: true });
-       break;
-     case 'priority_high':
-       // 第1ソート: 優先度高い順（display_order昇順）
-       // 第2ソート: 更新日時新しい順
-       query = query
-         .order('todo_priorities.display_order', { ascending: true })
-         .order('updated_at', { ascending: false });
-       break;
-     case 'priority_low':
-       // 第1ソート: 優先度低い順（display_order降順）
-       // 第2ソート: 更新日時新しい順
-       query = query
-         .order('todo_priorities.display_order', { ascending: false })
-         .order('updated_at', { ascending: false });
-       break;
-     case 'state_progress':
-       // 第1ソート: 状態進捗順（display_order降順: 4→3→2→1）
-       // 第2ソート: 更新日時新しい順
-       query = query
-         .order('todo_statuses.display_order', { ascending: false })
-         .order('updated_at', { ascending: false });
-       break;
-     case 'state_no_progress':
-       // 第1ソート: 状態未進捗順（display_order昇順: 1→2→3→4）
-       // 第2ソート: 更新日時新しい順
-       query = query
-         .order('todo_statuses.display_order', { ascending: true })
-         .order('updated_at', { ascending: false });
-       break;
+   export function useTodos(userId: string | null, filterParams?: {
+     priorityIds?: string[];
+     statusIds?: string[];
+     sortOption?: SortOption; // Phase 8: ソート機能強化で追加
+   }) {
+   ```
+
+2. ソートクエリ構築関数実装（`applySortToQuery`）
+   ```typescript
+   const applySortToQuery = useCallback((query: any, sortOption: SortOption = 'created_desc') => {
+     switch (sortOption) {
+       case 'created_desc':
+         return query.order('created_at', { ascending: false });
+       case 'priority_high':
+         // 第1ソート: 優先度高い順（display_order昇順：1→2→3）
+         // 第2ソート: 更新日時新しい順
+         return query
+           .order('priority.display_order', { ascending: true })
+           .order('updated_at', { ascending: false });
+       case 'state_progress':
+         // 第1ソート: 状態進捗順（display_order降順：4→3→2→1）
+         // 第2ソート: 更新日時新しい順
+         return query
+           .order('status.display_order', { ascending: false })
+           .order('updated_at', { ascending: false });
+       // ... 他の全8パターン実装済み
+     }
+   }, []);
+   ```
+
+3. 既存JOIN処理の活用と拡張
+   - 既存の`priority:todo_priorities(*)`、`status:todo_statuses(*)`を活用
+   - display_orderフィールドによる複合ソート実現
+   - パフォーマンス最適化ロジック維持
+
+4. CRUD操作のソート対応
+   - 追加/更新時のソート状態考慮
+   - デフォルト以外のソート時は完全データ再取得
+
+**完了済み検証項目**:
+- ✅ TypeScript型チェック: エラーなし
+- ✅ ESLint: 警告・エラーなし（any型は適切にdisable）
+- ✅ 本番ビルド: 正常終了
+- ✅ 既存フィルター機能: 保持確認
+- ✅ CRUD操作: 既存動作維持
+
+**重要事項**:
+- 🔶 ソートロジックは完成、UI統合待ち
+- 🔶 JOIN処理のフィールド参照（`priority.display_order`）は実動作検証が必要
+
+### ✅ Step 3: ソート選択UIコンポーネント作成（完了）
+**目的**: 既存のフィルターモーダルにソート機能を統合
+
+**設計変更**:
+- **配置**: ConditionModal内の優先度・状態フィルターの下部にソートUIを追加
+- **レイアウト**: ディバイダーで区切り、全幅（col-span-2）で配置
+- **ヘッダー**: 既存の「絞り込み/並び替え」がそのまま適用
+
+**実装内容**:
+1. **ConditionModalProps拡張**
+   ```typescript
+   interface ConditionModalProps {
+     // 既存
+     onSave: (
+       selectedPriorities: Set<string>, 
+       selectedStatuses: Set<string>,
+       sortOption: SortOption  // 新規追加
+     ) => Promise<boolean>;
+     // 新規
+     initialSortOption?: SortOption;
    }
    ```
-3. 優先度・状態テーブルとの適切なJOIN処理
 
-**注意点**:
-- リアルタイム更新との整合性維持
-- JOINクエリのパフォーマンス考慮
-
-### Step 3: ソート選択UIコンポーネント作成
-**目的**: ユーザーがソート条件を選択できるUI提供
-
-**実装内容**:
-1. `SortSelector`コンポーネント作成
-   - CustomSelectを使用（統一性のため）
-   - 単一のセレクトボックスで8つのオプションを選択
-
-2. ソートオプションの表示:
+2. **ソート状態管理の追加**
    ```typescript
-   const sortOptions = [
-     { value: 'created_desc', label: '作成日時（新しい順）' },
-     { value: 'created_asc', label: '作成日時（古い順）' },
-     { value: 'updated_desc', label: '更新日時（新しい順）' },
-     { value: 'updated_asc', label: '更新日時（古い順）' },
-     { value: 'priority_high', label: '優先度（高い順）' },
-     { value: 'priority_low', label: '優先度（低い順）' },
-     { value: 'state_progress', label: '状態（進捗順）' },
-     { value: 'state_no_progress', label: '状態（未進捗順）' }
-   ];
+   const [selectedSortOption, setSelectedSortOption] = useState<SortOption>('created_desc');
    ```
 
-**UIデザイン**:
-- フィルターボタンの隣に配置
-- アイコン: ソートアイコン使用
-- 選択中のオプションをセレクトボックスに表示
+3. **ソートUIの実装**
+   - CustomSelectを使用して統一感を保持
+   - 8つのソートオプションを選択肢として提供
+   - 既存のフィルターUIと同じデザインパターンを採用
 
-### Step 4: TodoListへの統合
-**目的**: ソート機能をメイン画面に組み込み
+4. **レイアウト構造**
+   ```tsx
+   <div className="grid grid-cols-2 gap-6">
+     {/* 既存: 優先度フィルタ */}
+     {/* 既存: 状態フィルタ */}
+   </div>
+   
+   {/* 新規: ディバイダー */}
+   <div className="border-t border-white/30 my-4" />
+   
+   {/* 新規: ソート選択 */}
+   <div>
+     <label className="block text-sm font-medium text-text mb-1">ソート</label>
+     <CustomSelect
+       options={sortOptions}
+       value={selectedSortOption}
+       onChange={setSelectedSortOption}
+     />
+   </div>
+   ```
+
+**ソートオプション定義**:
+```typescript
+const sortOptions = [
+  { id: 'created_desc', name: '作成日時（新しい順）' },
+  { id: 'created_asc', name: '作成日時（古い順）' },
+  { id: 'updated_desc', name: '更新日時（新しい順）' },
+  { id: 'updated_asc', name: '更新日時（古い順）' },
+  { id: 'priority_high', name: '優先度（高い順）' },
+  { id: 'priority_low', name: '優先度（低い順）' },
+  { id: 'state_progress', name: '状態（進捗順）' },
+  { id: 'state_no_progress', name: '状態（未進捗順）' }
+];
+```
+
+**UI設計の利点**:
+- 既存の「絞り込み/並び替え」ヘッダーと完全に一致
+- フィルター機能との統合により1つのモーダルで完結
+- CustomSelectを再利用してデザインの統一性を保持
+- レスポンシブ対応（ソート部分は全幅使用）
+
+### 🔄 Step 4: TodoListページの統合（進行中）
+**目的**: ソート機能をメインページに統合
 
 **実装内容**:
-1. AppHeaderにSortSelectorを追加
-2. ソート状態変更時の処理実装
-3. ローディング状態の考慮
+1. **✅ page.tsx（/todos）の修正**
+   - ✅ useTodoSortフックの追加
+   - ✅ filterParamsにsortOptionを統合
+   - ✅ ConditionModalのprops拡張
+   - ✅ handleConditionSave関数の拡張
+   - ✅ SortOption型のインポート追加
 
-**レイアウト調整**:
-- フィルターとソートの配置バランス
-- モバイル対応
+2. **🔲 状態管理の統合**
+   ```typescript
+   // 新規追加
+   const { getSortFromURL, updateSort, currentSort } = useTodoSort();
+   
+   // 既存のfilterParamsを拡張
+   const filterParams = useMemo(() => ({
+     priorityIds: activeFilters.priorityIds,
+     statusIds: activeFilters.statusIds,
+     sortOption: currentSort  // 新規追加
+   }), [activeFilters.priorityIds, activeFilters.statusIds, currentSort]);
+   ```
+
+3. **ConditionModalの統合**
+   ```typescript
+   const handleConditionSave = async (
+     priorities: Set<string>, 
+     statuses: Set<string>,
+     sortOption: SortOption  // 新規追加
+   ) => {
+     // フィルター更新（既存）
+     updateFilters(Array.from(priorities), Array.from(statuses));
+     // ソート更新（新規）
+     updateSort(sortOption);
+     return true;
+   };
+   ```
+
+4. **初期値の設定**
+   - ConditionModalにinitialSortOptionを渡す
+   - URLパラメータからソート状態を復元
 
 ### Step 5: 最終調整と品質保証
 **目的**: 実装の完成度向上
@@ -187,6 +278,7 @@
 - [ ] フィルターとの併用テスト
 - [ ] リアルタイム更新時の挙動確認
 - [ ] レスポンシブデザイン確認
+- [ ] JOIN処理（`priority.display_order`、`status.display_order`）の実動作確認
 
 ## 実装上の注意点
 
@@ -234,11 +326,39 @@
 4. 直感的で使いやすいUI
 5. 既存機能との完全な互換性
 
-## スケジュール目安
-- Step 1: 型定義とフック作成（1時間）
-- Step 2: useTodosフックの拡張（2時間）
-- Step 3: ソート選択UI実装（1.5時間）
-- Step 4: TodoListへの統合（1時間）
-- Step 5: 品質保証（0.5時間）
+## 進捗状況
 
-合計: 約6時間（シンプル化により短縮）
+### 完了済み
+- ✅ **Step 1**: 型定義とフック作成（実時間: 1時間）
+  - SortOption型定義（8パターン）
+  - useTodoSortフック実装
+  - URLパラメータ型拡張
+  
+- ✅ **Step 2**: useTodosフックの拡張（実時間: 1.5時間）
+  - ソートクエリ構築関数実装
+  - CRUD操作のソート対応
+  - 既存フィルター機能との統合
+
+### 残り作業
+- ✅ **Step 3**: ソート選択UIコンポーネント作成（完了: 1.5時間）
+- 🔲 **Step 4**: TodoListページの統合（予定: 1時間）
+- 🔲 **Step 5**: 品質保証（予定: 0.5時間）
+
+**進捗率**: 3/5ステップ完了（60%）  
+**残り予定時間**: 約1.5時間
+
+## 次のステップ
+
+### 🎯 **次の実装: Step 4 - TodoListページの統合**
+
+**実装順序**:
+1. **✅ page.tsx（/todos）の修正** - 完了
+2. **🎯 状態管理の統合** - conditionModalInitialStateにソート初期値を追加
+3. **ConditionModalの統合** - 既存実装で完了済み
+4. **初期値の設定** - 既存実装で完了済み
+
+**重要ポイント**:
+- 既存のフィルター機能への影響を最小化
+- handleConditionSave関数の拡張でソート状態も管理
+- メモ化を適切に維持してパフォーマンス確保
+- ソート状態のURL同期確認

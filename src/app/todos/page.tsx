@@ -22,6 +22,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useURLFilters } from '@/hooks/useURLFilters';
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
 import { useTodoStatuses } from '@/hooks/useTodoStatuses';
+import { useTodoSort } from '@/hooks/useTodoSort';
+import { SortOption } from '@/types/todo';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -50,6 +52,11 @@ function TodosPageContent() {
 
   // Phase 2: URLフィルター管理とConditionModal初期値状態
   const { getFiltersFromURL, updateFilters, currentFilters } = useURLFilters();
+  // Phase 8: ソート機能強化で追加
+  const { getSortFromURL, updateSort, currentSort } = useTodoSort();
+  // Phase 8: 後続ステップで使用予定のため未使用変数警告を抑制
+  void getSortFromURL;
+  void updateSort;
   const [conditionModalInitialState, setConditionModalInitialState] = useState({
     priorities: new Set<string>(),
     statuses: new Set<string>()
@@ -70,9 +77,10 @@ function TodosPageContent() {
   const filterParams = useMemo(() => {
     return {
       priorityIds: activeFilters.priorityIds,
-      statusIds: activeFilters.statusIds
+      statusIds: activeFilters.statusIds,
+      sortOption: currentSort // Phase 8: ソート機能強化で追加
     };
-  }, [activeFilters.priorityIds, activeFilters.statusIds]);
+  }, [activeFilters.priorityIds, activeFilters.statusIds, currentSort]);
 
   // Phase 4: useTodosカスタムフック（フィルターパラメータ付き）
   const { 
@@ -270,7 +278,8 @@ function TodosPageContent() {
   const handleLogout = logout;
 
   // Phase 4: ConditionModal保存ハンドラー（フィルター統合）
-  const handleConditionSave = async (priorities: Set<string>, statuses: Set<string>) => {
+  // Phase 8: ソート機能強化でSortOptionパラメータを追加
+  const handleConditionSave = async (priorities: Set<string>, statuses: Set<string>, sortOption: SortOption) => {
     const priorityNames = Array.from(priorities);
     const statusNames = Array.from(statuses);
     
@@ -291,6 +300,8 @@ function TodosPageContent() {
     
     // URL更新（名前ベース）
     updateFilters(priorityNames, statusNames);
+    // Phase 8: ソート機能強化でソート状態も更新
+    updateSort(sortOption);
     // アクティブフィルター更新（IDベース）
     setActiveFilters({ priorityIds, statusIds });
     setShowConditionModal(false);
@@ -602,6 +613,7 @@ function TodosPageContent() {
         onCancel={() => setShowConditionModal(false)}
         initialPriorities={conditionModalInitialState.priorities}
         initialStatuses={conditionModalInitialState.statuses}
+        initialSortOption={currentSort}
       />
 
       {/* トースト通知 */}

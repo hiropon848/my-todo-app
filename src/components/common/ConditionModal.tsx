@@ -6,15 +6,19 @@ import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import { CustomSelect } from '@/components/common/CustomSelect';
+import { SortOption } from '@/types/todo';
 import CloseIcon from '@/icons/close.svg';
 
 interface ConditionModalProps {
   isOpen: boolean;
-  onSave: (selectedPriorities: Set<string>, selectedStatuses: Set<string>) => Promise<boolean>;
+  onSave: (selectedPriorities: Set<string>, selectedStatuses: Set<string>, sortOption: SortOption) => Promise<boolean>;
   onCancel: () => void;
   // Phase 2: 初期値props追加（デフォルト値でUI破壊防止）
   initialPriorities?: Set<string>;
   initialStatuses?: Set<string>;
+  // Phase 8: ソート機能強化で追加（デフォルト値で既存動作維持）
+  initialSortOption?: SortOption;
 }
 
 export function ConditionModal({ 
@@ -23,17 +27,33 @@ export function ConditionModal({
   onCancel,
   // デフォルト値で既存動作を完全に維持
   initialPriorities = new Set(),
-  initialStatuses = new Set()
+  initialStatuses = new Set(),
+  // Phase 8: ソート機能強化で追加（デフォルト値で既存動作維持）
+  initialSortOption = 'created_desc'
 }: ConditionModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   // Phase 2: 初期値をpropsから設定（既存動作維持）
   const [selectedPriorities, setSelectedPriorities] = useState<Set<string>>(initialPriorities);
   const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(initialStatuses);
+  // Phase 8: ソート機能強化で追加（既存パターンと同様）
+  const [selectedSortOption, setSelectedSortOption] = useState<SortOption>(initialSortOption);
 
   // データ取得  
   const { priorities, isLoading: prioritiesLoading } = useTodoPriorities();
   const { todoStatuses, isLoading: statusesLoading } = useTodoStatuses();
+
+  // Phase 8: ソート機能強化で追加（計画書通りのソートオプション定義）
+  const sortOptions = [
+    { id: 'created_desc', name: '作成日時（新しい順）' },
+    { id: 'created_asc', name: '作成日時（古い順）' },
+    { id: 'updated_desc', name: '更新日時（新しい順）' },
+    { id: 'updated_asc', name: '更新日時（古い順）' },
+    { id: 'priority_high', name: '優先度（高い順）' },
+    { id: 'priority_low', name: '優先度（低い順）' },
+    { id: 'state_progress', name: '状態（進捗順）' },
+    { id: 'state_no_progress', name: '状態（未進捗順）' }
+  ];
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -60,8 +80,10 @@ export function ConditionModal({
     if (isOpen) {
       setSelectedPriorities(new Set(initialPriorities));
       setSelectedStatuses(new Set(initialStatuses));
+      // Phase 8: ソート機能強化で追加（既存パターンと同様）
+      setSelectedSortOption(initialSortOption);
     }
-  }, [isOpen, initialPriorities, initialStatuses]);
+  }, [isOpen, initialPriorities, initialStatuses, initialSortOption]);
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -115,10 +137,16 @@ export function ConditionModal({
     setSelectedStatuses(new Set());
   };
 
+  // Phase 8: ソート機能強化で追加（CustomSelectのonChangeハンドラー）
+  const handleSortChange = (sortValue: string) => {
+    setSelectedSortOption(sortValue as SortOption);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const success = await onSave(selectedPriorities, selectedStatuses);
+      // Phase 8: ソート機能強化で実装済み
+      const success = await onSave(selectedPriorities, selectedStatuses, selectedSortOption);
       if (success) {
         setShowModal(false);
         setTimeout(() => {
@@ -254,6 +282,22 @@ export function ConditionModal({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Phase 8: ソート機能強化で追加（ディバイダー） */}
+          <div className="border-t border-white/30 my-4" />
+
+          {/* Phase 8: ソート機能強化で追加（ソート選択） */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">ソート</label>
+            <CustomSelect
+              id="sort-select"
+              value={selectedSortOption}
+              onChange={handleSortChange}
+              options={sortOptions}
+              placeholder="ソート方法を選択"
+              className=""
+            />
           </div>
 
           {/* フッターボタン */}
