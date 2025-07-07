@@ -19,16 +19,11 @@ import SortAndFilterIcon from '@/icons/sort-and-filter.svg';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useProfile } from '@/hooks/useProfile';
-// Phase 2: URLフィルター管理フックをインポート
 import { useURLFilters } from '@/hooks/useURLFilters';
-// Phase 4: 名前→ID変換のためのマスタデータフック
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
 import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 
 function TodosPageContent() {
-  // Phase 3: 機能フラグ（段階的有効化用）
-  const ENABLE_URL_FILTERS = true; // Phase 3-3で有効化
-
   const router = useRouter();
   const { user, isLoading, isLoggingOut, logout, updateUser } = useAuth();
   
@@ -60,7 +55,6 @@ function TodosPageContent() {
     statuses: new Set<string>()
   });
 
-  // Phase 4: マスタデータとフィルター状態管理
   const { priorities, isLoading: prioritiesLoading, getPriorityByName } = useTodoPriorities();
   const { todoStatuses, isLoading: statusesLoading, getTodoStatusByName } = useTodoStatuses();
   const [activeFilters, setActiveFilters] = useState<{
@@ -73,14 +67,12 @@ function TodosPageContent() {
     return activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0;
   }, [activeFilters.priorityIds.length, activeFilters.statusIds.length]);
 
-  // Phase 4: filterParams を useMemo で安定化（無限ループ防止）
   const filterParams = useMemo(() => {
-    if (!ENABLE_URL_FILTERS) return undefined;
     return {
       priorityIds: activeFilters.priorityIds,
       statusIds: activeFilters.statusIds
     };
-  }, [ENABLE_URL_FILTERS, activeFilters.priorityIds, activeFilters.statusIds]);
+  }, [activeFilters.priorityIds, activeFilters.statusIds]);
 
   // Phase 4: useTodosカスタムフック（フィルターパラメータ付き）
   const { 
@@ -279,43 +271,38 @@ function TodosPageContent() {
 
   // Phase 4: ConditionModal保存ハンドラー（フィルター統合）
   const handleConditionSave = async (priorities: Set<string>, statuses: Set<string>) => {
-    if (ENABLE_URL_FILTERS) {
-      const priorityNames = Array.from(priorities);
-      const statusNames = Array.from(statuses);
-      
-      // 名前→IDの変換
-      const priorityIds = priorityNames
-        .map(name => getPriorityByName(name)?.id)
-        .filter((id): id is string => id !== undefined);
-      const statusIds = statusNames
-        .map(name => getTodoStatusByName(name)?.id)
-        .filter((id): id is string => id !== undefined);
-      
-      console.log('🔄 フィルター保存:', {
-        priorityNames, statusNames,
-        priorityIds, statusIds
-      });
-      
-      // URL更新（名前ベース）
-      updateFilters(priorityNames, statusNames);
-      // アクティブフィルター更新（IDベース）
-      setActiveFilters({ priorityIds, statusIds });
-    }
+    const priorityNames = Array.from(priorities);
+    const statusNames = Array.from(statuses);
+    
+    // 名前→IDの変換
+    const priorityIds = priorityNames
+      .map(name => getPriorityByName(name)?.id)
+      .filter((id): id is string => id !== undefined);
+    const statusIds = statusNames
+      .map(name => getTodoStatusByName(name)?.id)
+      .filter((id): id is string => id !== undefined);
+    
+    console.log('🔄 フィルター保存:', {
+      priorityNames, statusNames,
+      priorityIds, statusIds
+    });
+    
+    // URL更新（名前ベース）
+    updateFilters(priorityNames, statusNames);
+    // アクティブフィルター更新（IDベース）
+    setActiveFilters({ priorityIds, statusIds });
     setShowConditionModal(false);
     return true;
   };
 
   // Phase 5: フィルタークリア機能
   const handleClearFilters = () => {
-    if (ENABLE_URL_FILTERS) {
-      updateFilters([], []);
-      setActiveFilters({ priorityIds: [], statusIds: [] });
-    }
+    updateFilters([], []);
+    setActiveFilters({ priorityIds: [], statusIds: [] });
   };
 
-  // Phase 4: URL変化の監視とフィルター状態の統合更新
   useEffect(() => {
-    if (ENABLE_URL_FILTERS && !prioritiesLoading && !statusesLoading) {
+    if (!prioritiesLoading && !statusesLoading) {
       console.log('🔄 URL変化検知:', { 
         priorities: currentFilters.priorities, 
         statuses: currentFilters.statuses 
@@ -339,31 +326,21 @@ function TodosPageContent() {
       setActiveFilters({ priorityIds, statusIds });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ENABLE_URL_FILTERS, prioritiesLoading, statusesLoading, currentFilters]); // currentFiltersも監視（関数は無限ループ防止のため除外）
+  }, [prioritiesLoading, statusesLoading, currentFilters]); // currentFiltersも監視（関数は無限ループ防止のため除外）
 
-  // Phase 3: ConditionModalを開く際の初期値設定（機能フラグで制御）
   const handleConditionModalOpen = () => {
-    if (ENABLE_URL_FILTERS) {
-      // URLの変化は useEffect で監視済みなので、現在の状態をそのまま使用
-      const urlFilters = getFiltersFromURL();
-      console.log('🚀 ConditionModal開く:', { 
-        urlFilters,
-        currentState: {
-          priorities: Array.from(conditionModalInitialState.priorities),
-          statuses: Array.from(conditionModalInitialState.statuses)
-        }
-      });
-      setConditionModalInitialState({
-        priorities: new Set(urlFilters.priorities),
-        statuses: new Set(urlFilters.statuses)
-      });
-    } else {
-      // 既存動作を維持（Phase 2と同じ）
-      setConditionModalInitialState({
-        priorities: new Set(),
-        statuses: new Set()
-      });
-    }
+    const urlFilters = getFiltersFromURL();
+    console.log('🚀 ConditionModal開く:', { 
+      urlFilters,
+      currentState: {
+        priorities: Array.from(conditionModalInitialState.priorities),
+        statuses: Array.from(conditionModalInitialState.statuses)
+      }
+    });
+    setConditionModalInitialState({
+      priorities: new Set(urlFilters.priorities),
+      statuses: new Set(urlFilters.statuses)
+    });
     setShowConditionModal(true);
   };
 
@@ -424,7 +401,6 @@ function TodosPageContent() {
           <div className="flex flex-col mb-6 bg-white/30 rounded-xl p-4 border border-white/20 shadow">
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-2">
-                {ENABLE_URL_FILTERS && (
                   <>
                     {/* フィルター条件表示 */}
                     <div className="flex items-center gap-2">
@@ -466,10 +442,9 @@ function TodosPageContent() {
                       <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
                     </div>
                   </>
-                )}
               </div>
               <div className="flex items-center gap-2">
-                {ENABLE_URL_FILTERS && hasActiveFilters && (
+                {hasActiveFilters && (
                   <button
                     onClick={handleClearFilters}
                     className="text-sm text-gray-600 hover:text-gray-800 transition-colors px-3 py-1 rounded-md hover:bg-black/5"

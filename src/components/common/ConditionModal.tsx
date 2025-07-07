@@ -207,7 +207,7 @@ export function ConditionModal({
                       <button
                         key={priority.id}
                         onClick={() => handlePriorityToggle(priority.id)}
-                        className={`w-full text-left px-3 py-2 text-base transition-colors mb-1 ${
+                        className={`w-full text-left px-3 py-2 text-base transition-colors ${
                           selectedPriorities.has(priority.name)
                             ? 'bg-blue-100 font-medium rounded'
                             : 'text-gray-900 hover:bg-gray-100 hover:rounded'
@@ -241,7 +241,7 @@ export function ConditionModal({
                       <button
                         key={status.id}
                         onClick={() => handleStatusToggle(status.id)}
-                        className={`w-full text-left px-3 py-2 text-base transition-colors mb-1 ${
+                        className={`w-full text-left px-3 py-2 text-base transition-colors ${
                           selectedStatuses.has(status.name)
                             ? 'bg-blue-100 font-medium rounded'
                             : 'text-gray-900 hover:bg-gray-100 hover:rounded'
