@@ -12,9 +12,10 @@ export interface FilterState {
 
 /**
  * URLクエリパラメータとして使用するフィルターパラメータ
- * ?priorities=high,medium&statuses=todo,progress 形式
+ * ?priorities=high,medium&statuses=todo,progress&sort=created_desc 形式
  */
 export interface URLFilterParams {
   priorities?: string[];
   statuses?: string[];
+  sort?: string; // Phase 8: ソート機能強化で追加
 }

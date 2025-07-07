@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Todo } from '@/types/todo';
+import { Todo, SortOption } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
 
 export function useTodos(userId: string | null, filterParams?: {
   priorityIds?: string[];
   statusIds?: string[];
+  sortOption?: SortOption; // Phase 8: ソート機能強化で追加
 }) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,6 +18,48 @@ export function useTodos(userId: string | null, filterParams?: {
 
   // Priority情報を取得
   const { getDefaultPriorityId } = useTodoPriorities();
+
+  // ソートクエリ構築関数（Phase 8: ソート機能強化）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const applySortToQuery = useCallback((query: any, sortOption: SortOption = 'created_desc') => {
+    switch (sortOption) {
+      case 'created_desc':
+        return query.order('created_at', { ascending: false });
+      case 'created_asc':
+        return query.order('created_at', { ascending: true });
+      case 'updated_desc':
+        return query.order('updated_at', { ascending: false });
+      case 'updated_asc':
+        return query.order('updated_at', { ascending: true });
+      case 'priority_high':
+        // 第1ソート: 優先度高い順（display_order昇順：1→2→3）
+        // 第2ソート: 更新日時新しい順
+        return query
+          .order('priority.display_order', { ascending: true })
+          .order('updated_at', { ascending: false });
+      case 'priority_low':
+        // 第1ソート: 優先度低い順（display_order降順：3→2→1）
+        // 第2ソート: 更新日時新しい順
+        return query
+          .order('priority.display_order', { ascending: false })
+          .order('updated_at', { ascending: false });
+      case 'state_progress':
+        // 第1ソート: 状態進捗順（display_order降順：4→3→2→1）
+        // 第2ソート: 更新日時新しい順
+        return query
+          .order('status.display_order', { ascending: false })
+          .order('updated_at', { ascending: false });
+      case 'state_no_progress':
+        // 第1ソート: 状態未進捗順（display_order昇順：1→2→3→4）
+        // 第2ソート: 更新日時新しい順
+        return query
+          .order('status.display_order', { ascending: true })
+          .order('updated_at', { ascending: false });
+      default:
+        // フォールバック: デフォルトのソート（既存動作と同じ）
+        return query.order('created_at', { ascending: false });
+    }
+  }, []);
 
   // データ取得関数を分離（再利用可能にする）
   const fetchTodos = useCallback(async () => {
@@ -45,8 +88,10 @@ export function useTodos(userId: string | null, filterParams?: {
         query = query.in('todo_status_id', filterParams.statusIds);
       }
       
-      // 並び順（既存と同じ）
-      query = query.order('created_at', { ascending: false });
+      // ソート適用（Phase 8: ソート機能強化）
+      // 既存の固定ソートをパラメータベースに変更
+      const sortOption = filterParams?.sortOption || 'created_desc';
+      query = applySortToQuery(query, sortOption);
       
       const { data: todosData, error: todosError } = await query;
       
@@ -61,7 +106,7 @@ export function useTodos(userId: string | null, filterParams?: {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, filterParams]); // useCallbackの依存配列
+  }, [userId, filterParams, applySortToQuery]); // useCallbackの依存配列（Phase 8: ソート機能対応）
 
   useEffect(() => {
     fetchTodos();
@@ -170,11 +215,12 @@ export function useTodos(userId: string | null, filterParams?: {
         console.log('✅ Todo inserted successfully:', inserted);
       }
       
-      // フィルターが適用されている場合は完全なデータ再取得
-      // 新しく作成されたToDoがフィルター条件に合うかどうかを正確に判定
+      // フィルターまたはソートが適用されている場合は完全なデータ再取得
+      // 新しく作成されたToDoがフィルター条件に合うかどうか、ソート順序に影響するかを正確に判定
       const hasActiveFilters = filterParams && (
         (filterParams.priorityIds && filterParams.priorityIds.length > 0) || 
-        (filterParams.statusIds && filterParams.statusIds.length > 0)
+        (filterParams.statusIds && filterParams.statusIds.length > 0) ||
+        (filterParams.sortOption && filterParams.sortOption !== 'created_desc') // デフォルト以外のソート
       );
       
       if (hasActiveFilters) {
@@ -228,11 +274,12 @@ export function useTodos(userId: string | null, filterParams?: {
         throw updateError;
       }
       
-      // フィルターが適用されている場合は完全なデータ再取得
-      // フィルター条件に合わなくなったToDoが適切に除外される
+      // フィルターまたはソートが適用されている場合は完全なデータ再取得
+      // フィルター条件に合わなくなったToDoが適切に除外され、ソート順序が正しく反映される
       const hasActiveFilters = filterParams && (
         (filterParams.priorityIds && filterParams.priorityIds.length > 0) || 
-        (filterParams.statusIds && filterParams.statusIds.length > 0)
+        (filterParams.statusIds && filterParams.statusIds.length > 0) ||
+        (filterParams.sortOption && filterParams.sortOption !== 'created_desc') // デフォルト以外のソート
       );
       
       if (hasActiveFilters) {
