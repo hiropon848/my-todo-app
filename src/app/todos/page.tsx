@@ -282,10 +282,12 @@ function TodosPageContent() {
       .map(name => getTodoStatusByName(name)?.id)
       .filter((id): id is string => id !== undefined);
     
-    console.log('🔄 フィルター保存:', {
-      priorityNames, statusNames,
-      priorityIds, statusIds
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 フィルター保存:', {
+        priorityNames, statusNames,
+        priorityIds, statusIds
+      });
+    }
     
     // URL更新（名前ベース）
     updateFilters(priorityNames, statusNames);
@@ -302,11 +304,15 @@ function TodosPageContent() {
   };
 
   useEffect(() => {
-    if (!prioritiesLoading && !statusesLoading) {
-      console.log('🔄 URL変化検知:', { 
-        priorities: currentFilters.priorities, 
-        statuses: currentFilters.statuses 
-      });
+    if (!prioritiesLoading && !statusesLoading && priorities && todoStatuses) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 URL変化検知:', { 
+          priorities: currentFilters.priorities, 
+          statuses: currentFilters.statuses,
+          availablePriorities: priorities.map(p => p.name),
+          availableStatuses: todoStatuses.map(s => s.name)
+        });
+      }
       
       // ConditionModal初期値更新
       setConditionModalInitialState({
@@ -316,27 +322,69 @@ function TodosPageContent() {
       
       // アクティブフィルター更新（名前→IDの変換）
       const priorityIds = currentFilters.priorities
-        ?.map(name => getPriorityByName(name)?.id)
-        .filter((id): id is string => id !== undefined) || [];
-      const statusIds = currentFilters.statuses
-        ?.map(name => getTodoStatusByName(name)?.id)
+        ?.map(name => {
+          const priority = getPriorityByName(name);
+          if (!priority) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`⚠️ 不明な優先度名: ${name}`);
+            }
+          }
+          return priority?.id;
+        })
         .filter((id): id is string => id !== undefined) || [];
       
-      console.log('🎯 アクティブフィルター更新:', { priorityIds, statusIds });
-      setActiveFilters({ priorityIds, statusIds });
+      const statusIds = currentFilters.statuses
+        ?.map(name => {
+          const status = getTodoStatusByName(name);
+          if (!status) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`⚠️ 不明なステータス名: ${name}`);
+            }
+          }
+          return status?.id;
+        })
+        .filter((id): id is string => id !== undefined) || [];
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 アクティブフィルター更新:', { 
+          priorityIds, 
+          statusIds,
+          fromNames: { priorities: currentFilters.priorities, statuses: currentFilters.statuses }
+        });
+      }
+      
+      // 状態の安定化：前回と同じ値の場合は更新をスキップ
+      setActiveFilters(prev => {
+        const isSame = 
+          prev.priorityIds.length === priorityIds.length &&
+          prev.statusIds.length === statusIds.length &&
+          prev.priorityIds.every(id => priorityIds.includes(id)) &&
+          prev.statusIds.every(id => statusIds.includes(id));
+        
+        if (isSame) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🎯 アクティブフィルター変更なし、更新スキップ');
+          }
+          return prev;
+        }
+        
+        return { priorityIds, statusIds };
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prioritiesLoading, statusesLoading, currentFilters]); // currentFiltersも監視（関数は無限ループ防止のため除外）
+  }, [prioritiesLoading, statusesLoading, currentFilters, priorities, todoStatuses]); // マスタデータも監視
 
   const handleConditionModalOpen = () => {
     const urlFilters = getFiltersFromURL();
-    console.log('🚀 ConditionModal開く:', { 
-      urlFilters,
-      currentState: {
-        priorities: Array.from(conditionModalInitialState.priorities),
-        statuses: Array.from(conditionModalInitialState.statuses)
-      }
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 ConditionModal開く:', { 
+        urlFilters,
+        currentState: {
+          priorities: Array.from(conditionModalInitialState.priorities),
+          statuses: Array.from(conditionModalInitialState.statuses)
+        }
+      });
+    }
     setConditionModalInitialState({
       priorities: new Set(urlFilters.priorities),
       statuses: new Set(urlFilters.statuses)

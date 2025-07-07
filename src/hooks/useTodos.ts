@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
@@ -18,51 +18,54 @@ export function useTodos(userId: string | null, filterParams?: {
   // Priority情報を取得
   const { getDefaultPriorityId } = useTodoPriorities();
 
-  useEffect(() => {
+  // データ取得関数を分離（再利用可能にする）
+  const fetchTodos = useCallback(async () => {
     if (!userId) {
       setIsLoading(true);
       return;
     }
     setIsLoading(true);
     setError('');
-    (async () => {
-      try {
-        // 基本クエリを構築（既存と同じ）
-        let query = supabase
-          .from('todos')
-          .select(`
-            *,
-            priority:todo_priorities(*),
-            status:todo_statuses(*)
-          `)
-          .eq('user_id', userId);
-        
-        // フィルターパラメータが存在する場合のみ適用（既存動作への影響なし）
-        if (filterParams?.priorityIds?.length) {
-          query = query.in('todo_priority_id', filterParams.priorityIds);
-        }
-        if (filterParams?.statusIds?.length) {
-          query = query.in('todo_status_id', filterParams.statusIds);
-        }
-        
-        // 並び順（既存と同じ）
-        query = query.order('created_at', { ascending: false });
-        
-        const { data: todosData, error: todosError } = await query;
-        
-        if (todosError) {
-          throw todosError;
-        }
-        
-        setTodos(todosData || []);
-      } catch {
-        setError('ToDoの取得に失敗しました');
-        setTodos([]);
-      } finally {
-        setIsLoading(false);
+    try {
+      // 基本クエリを構築（既存と同じ）
+      let query = supabase
+        .from('todos')
+        .select(`
+          *,
+          priority:todo_priorities(*),
+          status:todo_statuses(*)
+        `)
+        .eq('user_id', userId);
+      
+      // フィルターパラメータが存在する場合のみ適用（既存動作への影響なし）
+      if (filterParams?.priorityIds?.length) {
+        query = query.in('todo_priority_id', filterParams.priorityIds);
       }
-    })();
-  }, [userId, filterParams]); // filterParamsの変化も監視
+      if (filterParams?.statusIds?.length) {
+        query = query.in('todo_status_id', filterParams.statusIds);
+      }
+      
+      // 並び順（既存と同じ）
+      query = query.order('created_at', { ascending: false });
+      
+      const { data: todosData, error: todosError } = await query;
+      
+      if (todosError) {
+        throw todosError;
+      }
+      
+      setTodos(todosData || []);
+    } catch {
+      setError('ToDoの取得に失敗しました');
+      setTodos([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId, filterParams]); // useCallbackの依存配列
+
+  useEffect(() => {
+    fetchTodos();
+  }, [fetchTodos]); // fetchTodosが変化したときに実行
 
   // ToDo削除ロジック
   const deleteTodo = async (id: string) => {
@@ -89,26 +92,36 @@ export function useTodos(userId: string | null, filterParams?: {
     priorityId?: string,
     statusId?: string
   ) => {
-    console.log('📝 addTodo called:', { title, text, priorityId, statusId });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📝 addTodo called:', { title, text, priorityId, statusId });
+    }
     setError('');
     if (!title.trim()) {
-      console.log('❌ Title validation failed');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Title validation failed');
+      }
       setError('タイトルは必須です');
       return false;
     }
     
     try {
       const finalPriorityId = priorityId || getDefaultPriorityId();
-      console.log('🎯 Priority ID:', finalPriorityId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Priority ID:', finalPriorityId);
+      }
       if (!finalPriorityId) {
-        console.log('❌ Failed to get priority ID');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('❌ Failed to get priority ID');
+        }
         setError('優先度データの取得に失敗しました');
         return false;
       }
       
       let finalStatusId = statusId;
       if (!finalStatusId) {
-        console.log('🔍 Fetching default status...');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 Fetching default status...');
+        }
         const { data: defaultStatus, error: statusError } = await supabase
           .from('todo_statuses')
           .select('id')
@@ -116,16 +129,22 @@ export function useTodos(userId: string | null, filterParams?: {
           .single();
 
         if (statusError || !defaultStatus) {
-          console.error('❌ Failed to get default status:', statusError);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ Failed to get default status:', statusError);
+          }
           setError('デフォルト状態の取得に失敗しました');
           return false;
         }
         finalStatusId = defaultStatus.id;
-        console.log('✅ Default status ID:', finalStatusId);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Default status ID:', finalStatusId);
+        }
       }
       
       setIsAddTodoLoading(true);
-      console.log('💾 Inserting todo...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💾 Inserting todo...');
+      }
       
       const { data: inserted, error: insertError } = await supabase.from('todos').insert({
         user_id: userId,
@@ -140,16 +159,37 @@ export function useTodos(userId: string | null, filterParams?: {
       `).single();
       
       if (insertError || !inserted) {
-        console.error('❌ Insert failed:', insertError);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('❌ Insert failed:', insertError);
+        }
         setError('ToDoの追加に失敗しました');
         return false;
       }
       
-      console.log('✅ Todo inserted successfully:', inserted);
-      setTodos(prev => [inserted, ...prev]);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Todo inserted successfully:', inserted);
+      }
+      
+      // フィルターが適用されている場合は完全なデータ再取得
+      // 新しく作成されたToDoがフィルター条件に合うかどうかを正確に判定
+      const hasActiveFilters = filterParams && (
+        (filterParams.priorityIds && filterParams.priorityIds.length > 0) || 
+        (filterParams.statusIds && filterParams.statusIds.length > 0)
+      );
+      
+      if (hasActiveFilters) {
+        // フィルター適用時: 完全なデータ再取得でフィルタリングを再実行
+        await fetchTodos();
+      } else {
+        // フィルターなし時: 既存の個別追加ロジックを維持（パフォーマンス重視）
+        setTodos(prev => [inserted, ...prev]);
+      }
+      
       return true;
     } catch (error) {
-      console.error('❌ Unexpected error in addTodo:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Unexpected error in addTodo:', error);
+      }
       const errorMessage = error instanceof Error ? error.message : 'ToDoの追加に失敗しました';
       setError(errorMessage);
       return false;
@@ -188,19 +228,32 @@ export function useTodos(userId: string | null, filterParams?: {
         throw updateError;
       }
       
-      const { data: updatedTodo, error: fetchError } = await supabase
-        .from('todos')
-        .select(`*, priority:todo_priorities(*), status:todo_statuses(*)`)
-        .eq('id', id)
-        .single();
+      // フィルターが適用されている場合は完全なデータ再取得
+      // フィルター条件に合わなくなったToDoが適切に除外される
+      const hasActiveFilters = filterParams && (
+        (filterParams.priorityIds && filterParams.priorityIds.length > 0) || 
+        (filterParams.statusIds && filterParams.statusIds.length > 0)
+      );
       
-      if (fetchError || !updatedTodo) {
-        throw new Error('更新データの取得に失敗しました');
+      if (hasActiveFilters) {
+        // フィルター適用時: 完全なデータ再取得でフィルタリングを再実行
+        await fetchTodos();
+      } else {
+        // フィルターなし時: 既存の個別更新ロジックを維持（パフォーマンス重視）
+        const { data: updatedTodo, error: fetchError } = await supabase
+          .from('todos')
+          .select(`*, priority:todo_priorities(*), status:todo_statuses(*)`)
+          .eq('id', id)
+          .single();
+        
+        if (fetchError || !updatedTodo) {
+          throw new Error('更新データの取得に失敗しました');
+        }
+        
+        setTodos(prev => prev.map(todo => 
+          todo.id === id ? updatedTodo : todo
+        ));
       }
-      
-      setTodos(prev => prev.map(todo => 
-        todo.id === id ? updatedTodo : todo
-      ));
       
       return true;
     } catch (error) {

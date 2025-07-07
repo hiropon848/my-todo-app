@@ -27,8 +27,31 @@ export function useURLFilters() {
     if (isReady) {
       const priorities = searchParams.get('priorities')?.split(',').filter(p => p.trim()) || [];
       const statuses = searchParams.get('statuses')?.split(',').filter(s => s.trim()) || [];
-      console.log('🔄 URL変化検知:', { priorities, statuses, searchParams: searchParams.toString() });
-      setCurrentFilters({ priorities, statuses });
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 URL変化検知:', { priorities, statuses, searchParams: searchParams.toString() });
+      }
+      
+      // 状態の安定化：前回と同じ値の場合は更新をスキップ
+      setCurrentFilters(prev => {
+        const isSame = 
+          prev.priorities?.length === priorities.length &&
+          prev.statuses?.length === statuses.length &&
+          prev.priorities?.every(p => priorities.includes(p)) &&
+          prev.statuses?.every(s => statuses.includes(s));
+        
+        if (isSame) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔄 フィルター状態変更なし、更新スキップ');
+          }
+          return prev;
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 フィルター状態更新:', { from: prev, to: { priorities, statuses } });
+        }
+        return { priorities, statuses };
+      });
     }
   }, [searchParams, isReady]);
   
@@ -46,27 +69,50 @@ export function useURLFilters() {
    */
   const updateFilters = (priorities: string[], statuses: string[]) => {
     if (!isReady) {
-      console.log('updateFilters: not ready yet');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('updateFilters: not ready yet');
+      }
       return;
     }
     
-    const params = new URLSearchParams(searchParams);
-    
-    // 空の場合はパラメータを削除
-    if (priorities.length === 0) {
-      params.delete('priorities');
-    } else {
-      params.set('priorities', priorities.join(','));
+    try {
+      const params = new URLSearchParams(searchParams);
+      
+      // 空の場合はパラメータを削除
+      if (priorities.length === 0) {
+        params.delete('priorities');
+      } else {
+        // 無効な文字をサニタイズ（カンマ、スペースなど）
+        const sanitizedPriorities = priorities
+          .filter(p => p && typeof p === 'string' && p.trim())
+          .map(p => p.trim());
+        if (sanitizedPriorities.length > 0) {
+          params.set('priorities', sanitizedPriorities.join(','));
+        } else {
+          params.delete('priorities');
+        }
+      }
+      
+      if (statuses.length === 0) {
+        params.delete('statuses');
+      } else {
+        // 無効な文字をサニタイズ（カンマ、スペースなど）
+        const sanitizedStatuses = statuses
+          .filter(s => s && typeof s === 'string' && s.trim())
+          .map(s => s.trim());
+        if (sanitizedStatuses.length > 0) {
+          params.set('statuses', sanitizedStatuses.join(','));
+        } else {
+          params.delete('statuses');
+        }
+      }
+      
+      // ブラウザ履歴に追加してURL更新（scroll無効化）
+      router.push(`?${params.toString()}`, { scroll: false });
+    } catch (error) {
+      console.error('URL更新エラー:', error);
+      // URL更新に失敗してもアプリケーションは継続動作
     }
-    
-    if (statuses.length === 0) {
-      params.delete('statuses');
-    } else {
-      params.set('statuses', statuses.join(','));
-    }
-    
-    // ブラウザ履歴に追加してURL更新（scroll無効化）
-    router.push(`?${params.toString()}`, { scroll: false });
   };
   
   return { 

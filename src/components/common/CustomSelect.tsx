@@ -40,19 +40,39 @@ export function CustomSelect({
   // 選択された option を取得
   const selectedOption = options.find(option => option.id === value);
 
+  // 適応的高さ管理（項目数に応じて最適化）
+  const getDropdownStyle = useCallback(() => {
+    // 少数項目（5個以下）: 自然な高さ、スクロールなし
+    // 多数項目（6個以上）: 最大高さ制限、スクロール有効
+    const MAX_ITEMS_WITHOUT_SCROLL = 5;
+    
+    if (options.length <= MAX_ITEMS_WITHOUT_SCROLL) {
+      return {
+        maxHeight: 'none',
+        overflow: 'visible' as const
+      };
+    } else {
+      return {
+        maxHeight: '200px', // 従来の固定値を使用
+        overflow: 'auto' as const
+      };
+    }
+  }, [options.length]);
+
   // ドロップダウンの位置を計算
   const calculatePosition = useCallback(() => {
     if (!containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const dropdownHeight = Math.min(options.length * 40 + 8, 200); // 最大高さ200px
+    // 概算の高さ（少数項目なら自然な高さ、多数項目なら200px）
+    const estimatedHeight = options.length <= 5 ? options.length * 40 + 16 : 200;
     
     // 下に表示する余裕があるかチェック
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
     
-    if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+    if (spaceBelow >= estimatedHeight || spaceBelow >= spaceAbove) {
       setDropdownPosition('bottom');
     } else {
       setDropdownPosition('top');
@@ -154,13 +174,16 @@ export function CustomSelect({
           }`}
           style={{ minWidth: '100%' }}
         >
-          <div className="py-1 px-1 max-h-48 overflow-y-auto">
+          <div 
+            className="py-1 px-1 space-y-1"
+            style={getDropdownStyle()}
+          >
             {options.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => handleOptionClick(option.id)}
-                className={`w-full text-left px-3 py-2 text-base transition-colors mb-1 [&:last-child]:mb-0 ${
+                className={`w-full text-left px-3 py-2 text-base transition-colors ${
                   option.id === value
                     ? 'bg-blue-100 font-medium rounded'
                     : 'text-gray-900 hover:bg-gray-100 hover:rounded'
