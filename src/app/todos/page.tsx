@@ -305,6 +305,14 @@ function TodosPageContent() {
     return true;
   };
 
+  // Phase 5: フィルタークリア機能
+  const handleClearFilters = () => {
+    if (ENABLE_URL_FILTERS) {
+      updateFilters([], []);
+      setActiveFilters({ priorityIds: [], statusIds: [] });
+    }
+  };
+
   // Phase 4: URL変化の監視とフィルター状態の統合更新
   useEffect(() => {
     if (ENABLE_URL_FILTERS && !prioritiesLoading && !statusesLoading) {
@@ -461,6 +469,14 @@ function TodosPageContent() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {ENABLE_URL_FILTERS && hasActiveFilters && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-sm text-gray-600 hover:text-gray-800 transition-colors px-3 py-1 rounded-md hover:bg-black/5"
+                  >
+                    クリア
+                  </button>
+                )}
                 <button
                   onClick={handleConditionModalOpen}
                   className="p-3 rounded-full hover:bg-black/10 transition-colors"
