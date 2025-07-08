@@ -23,6 +23,7 @@ import { useURLFilters } from '@/hooks/useURLFilters';
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
 import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { useTodoSort } from '@/hooks/useTodoSort';
+import { useSearchKeyword } from '@/hooks/useSearchKeyword';
 import { SortOption } from '@/types/todo';
 
 function TodosPageContent() {
@@ -50,12 +51,18 @@ function TodosPageContent() {
   const [showTodoAddModal, setShowTodoAddModal] = useState(false);
   const [showConditionModal, setShowConditionModal] = useState(false);
 
+  // Phase 7: 検索ワード入力の状態管理
+  const [searchInput, setSearchInput] = useState('');
+
   // Phase 2: URLフィルター管理とConditionModal初期値状態
-  const { getFiltersFromURL, updateFilters, currentFilters } = useURLFilters();
+  const { getFiltersFromURL, currentFilters } = useURLFilters();
   // Phase 8: ソート機能強化で追加
-  const { getSortFromURL, updateSort, currentSort } = useTodoSort();
+  const { getSortFromURL, currentSort } = useTodoSort();
+  // Phase 7: 検索機能実装で追加
+  const { getSearchKeywordFromURL, currentSearchKeyword } = useSearchKeyword();
   // Phase 8: 後続ステップで使用予定のため未使用変数警告を抑制
   void getSortFromURL;
+  void getSearchKeywordFromURL;
   const [conditionModalInitialState, setConditionModalInitialState] = useState({
     priorities: new Set<string>(),
     statuses: new Set<string>(),
@@ -72,16 +79,19 @@ function TodosPageContent() {
 
 
   const hasActiveFilters = useMemo(() => {
-    return activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0;
-  }, [activeFilters.priorityIds.length, activeFilters.statusIds.length]);
+    return activeFilters.priorityIds.length > 0 || 
+           activeFilters.statusIds.length > 0 || 
+           (currentSearchKeyword && currentSearchKeyword.trim() !== ''); // Phase 7: 検索キーワードもフィルターとして扱う
+  }, [activeFilters.priorityIds.length, activeFilters.statusIds.length, currentSearchKeyword]);
 
   const filterParams = useMemo(() => {
     return {
       priorityIds: activeFilters.priorityIds,
       statusIds: activeFilters.statusIds,
-      sortOption: currentSort // Phase 8: ソート機能強化で追加
+      sortOption: currentSort, // Phase 8: ソート機能強化で追加
+      searchKeyword: currentSearchKeyword // Phase 7: 検索機能実装で追加
     };
-  }, [activeFilters.priorityIds, activeFilters.statusIds, currentSort]);
+  }, [activeFilters.priorityIds, activeFilters.statusIds, currentSort, currentSearchKeyword]);
 
   // Phase 4: useTodosカスタムフック（フィルターパラメータ付き）
   const { 
@@ -321,6 +331,11 @@ function TodosPageContent() {
     // URLSearchParamsを一度にまとめて更新
     const params = new URLSearchParams();
     
+    // Phase 7: 検索キーワード保持（フィルター変更時に検索キーワードを維持）
+    if (currentSearchKeyword) {
+      params.set('q', currentSearchKeyword);
+    }
+    
     // フィルターパラメータ設定
     if (priorityNames.length > 0) {
       params.set('priorities', priorityNames.join(','));
@@ -421,6 +436,34 @@ function TodosPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prioritiesLoading, statusesLoading, currentFilters, priorities, todoStatuses, currentSort]); // マスタデータとソート状態も監視
 
+  // Phase 7: 検索ワード入力とURL同期
+  useEffect(() => {
+    // URLの検索キーワードと入力フィールドを同期
+    setSearchInput(currentSearchKeyword);
+    // 一時的なデバッグ出力
+    console.log('🔍 searchInput状態更新:', currentSearchKeyword);
+  }, [currentSearchKeyword]);
+
+  // Phase 7: 検索ワード入力のデバウンス処理
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== currentSearchKeyword) {
+        // 他のパラメータを保持しながら検索キーワードを更新
+        const params = new URLSearchParams(window.location.search);
+        if (searchInput.trim()) {
+          params.set('q', searchInput.trim());
+        } else {
+          params.delete('q');
+        }
+        const queryString = params.toString();
+        const urlString = queryString ? `/todos?${queryString}` : '/todos';
+        router.push(urlString);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchInput, currentSearchKeyword, router]);
+
   const handleConditionModalOpen = () => {
     const urlFilters = getFiltersFromURL();
     if (process.env.NODE_ENV === 'development') {
@@ -503,7 +546,7 @@ function TodosPageContent() {
               <h3 className="text-sm font-semibold text-gray-700">検索条件</h3>
             </div>
             
-            <div className="p-4">
+            <div className="px-4 py-2">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
                   <>
@@ -537,7 +580,7 @@ function TodosPageContent() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">なし</span>
+                        <span className="text-sm text-gray-500">絞り込み/並び替え なし</span>
                       )}
                     </div>
                   </>
@@ -565,7 +608,12 @@ function TodosPageContent() {
               <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
             </div>
             
-            {todos.map((todo, index) => {
+            {todos.length === 0 ? (
+              <div className="px-4 py-8 text-center text-gray-500">
+                該当するToDoがありません
+              </div>
+            ) : (
+              todos.map((todo, index) => {
               const isFirst = index === 0;
               const isLast = index === todos.length - 1;
               const isSingle = todos.length === 1;
@@ -628,7 +676,8 @@ function TodosPageContent() {
                 </div>
                 </div>
               );
-            })}
+            })
+            )}
           </div>
         </main>
       </div>

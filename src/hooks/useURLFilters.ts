@@ -25,8 +25,16 @@ export function useURLFilters() {
   // URLパラメータの変化を監視
   useEffect(() => {
     if (isReady) {
-      const priorities = searchParams.get('priorities')?.split(',').filter(p => p.trim()) || [];
-      const statuses = searchParams.get('statuses')?.split(',').filter(s => s.trim()) || [];
+      // URLデコードを適用してから処理
+      const prioritiesParam = searchParams.get('priorities');
+      const statusesParam = searchParams.get('statuses');
+      
+      const priorities = prioritiesParam 
+        ? prioritiesParam.split(',').map(p => decodeURIComponent(p.trim())).filter(p => p) 
+        : [];
+      const statuses = statusesParam 
+        ? statusesParam.split(',').map(s => decodeURIComponent(s.trim())).filter(s => s) 
+        : [];
       
       if (process.env.NODE_ENV === 'development') {
         console.log('🔄 URL変化検知:', { priorities, statuses, searchParams: searchParams.toString() });
