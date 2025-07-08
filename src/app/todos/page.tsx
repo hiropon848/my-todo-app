@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense, useMemo } from 'react';
+import { useEffect, useState, Suspense, useMemo, useCallback } from 'react';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -444,25 +444,70 @@ function TodosPageContent() {
     console.log('🔍 searchInput状態更新:', currentSearchKeyword);
   }, [currentSearchKeyword]);
 
+  // Phase 7: 検索専用URL更新関数（handleConditionSaveパターンを踏襲）
+  const handleSearchUpdate = useCallback((keyword: string) => {
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 検索URL更新開始:', { keyword, currentSearchKeyword });
+      }
+      
+      // URLSearchParamsを一度にまとめて更新（既存パターン踏襲）
+      const params = new URLSearchParams();
+      
+      // 検索キーワード設定
+      const trimmedKeyword = keyword.trim();
+      if (trimmedKeyword) {
+        params.set('q', trimmedKeyword);
+      }
+      // 空の場合はparams.delete('q')ではなく、パラメータ自体を設定しない
+      
+      // 既存のフィルターパラメータを保持（handleConditionSaveと同じ方式）
+      const currentFiltersFromURL = getFiltersFromURL();
+      if (currentFiltersFromURL.priorities && currentFiltersFromURL.priorities.length > 0) {
+        params.set('priorities', currentFiltersFromURL.priorities.join(','));
+      }
+      if (currentFiltersFromURL.statuses && currentFiltersFromURL.statuses.length > 0) {
+        params.set('statuses', currentFiltersFromURL.statuses.join(','));
+      }
+      
+      // 既存のソートパラメータを保持
+      const currentSortFromURL = getSortFromURL();
+      if (currentSortFromURL !== 'created_desc') {
+        params.set('sort', currentSortFromURL);
+      }
+      
+      // URL更新を一度に実行（履歴に追加してブラウザバック対応）
+      const queryString = params.toString();
+      const urlString = queryString ? `/todos?${queryString}` : '/todos';
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 検索URL更新実行:', urlString);
+      }
+      
+      router.push(urlString);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 検索URL更新完了');
+      }
+    } catch (error) {
+      console.error('検索URL更新エラー:', error);
+      // URL更新に失敗してもアプリケーションは継続動作
+    }
+  }, [currentSearchKeyword, getFiltersFromURL, getSortFromURL, router]);
+
   // Phase 7: 検索ワード入力のデバウンス処理
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 デバウンス処理実行:', { searchInput, currentSearchKeyword, willUpdate: searchInput !== currentSearchKeyword });
+      }
       if (searchInput !== currentSearchKeyword) {
-        // 他のパラメータを保持しながら検索キーワードを更新
-        const params = new URLSearchParams(window.location.search);
-        if (searchInput.trim()) {
-          params.set('q', searchInput.trim());
-        } else {
-          params.delete('q');
-        }
-        const queryString = params.toString();
-        const urlString = queryString ? `/todos?${queryString}` : '/todos';
-        router.push(urlString);
+        handleSearchUpdate(searchInput);
       }
     }, 300);
     
     return () => clearTimeout(timer);
-  }, [searchInput, currentSearchKeyword, router]);
+  }, [searchInput, currentSearchKeyword, handleSearchUpdate]);
 
   const handleConditionModalOpen = () => {
     const urlFilters = getFiltersFromURL();
@@ -536,6 +581,34 @@ function TodosPageContent() {
           {(error || todosError) && (
             <div className="mb-4 text-red-600 font-semibold text-sm text-center">
               {error || todosError}
+            </div>
+          )}
+
+          {/* 一時的なテスト用ボタン（Step 5実装時に削除予定） */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-xl">
+              <p className="text-sm font-bold mb-2">🔍 検索機能テスト用</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setSearchInput('テスト')}
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
+                >
+                  「テスト」で検索
+                </button>
+                <button 
+                  onClick={() => setSearchInput('会議')}
+                  className="px-3 py-1 bg-green-500 text-white rounded text-sm"
+                >
+                  「会議」で検索
+                </button>
+                <button 
+                  onClick={() => setSearchInput('')}
+                  className="px-3 py-1 bg-red-500 text-white rounded text-sm"
+                >
+                  クリア
+                </button>
+              </div>
+              <p className="text-xs mt-2">現在の検索入力: 「{searchInput}」</p>
             </div>
           )}
 

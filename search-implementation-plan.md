@@ -1,6 +1,6 @@
 # Phase 7: 検索機能実装計画
 
-## 最終更新: 2025-07-08 17:00
+## 最終更新: 2025-07-08 18:00
 現状のアプリケーション構造を詳細に分析した上での実装計画
 
 ## 実装済み事項
@@ -9,6 +9,8 @@
 - ✅ Step 3: データ取得ロジックの拡張（検索機能実装・品質チェック完了）
 - ✅ Step 4項目1: useSearchKeywordフックの導入（フィルター統合時の検索キーワード保持機能のみ）
 - ✅ Step 4項目2: filterParamsに検索キーワードを統合（URLパラメータでの検索実行が可能）
+- ✅ Step 4項目3: 検索ワード入力の状態管理（デバウンス処理・URL同期実装済み）
+- ✅ Step 4項目4: URL更新処理の実装（handleSearchUpdate関数作成完了）
 - ✅ エラーハンドリングの改善（0件とエラーの判別、具体的なエラーメッセージ表示）
 - ✅ ソート機能のバグ修正（リレーションフィールドでのソート問題解消、クライアント側ソート実装）
 - ✅ 0件時のUI改善（「該当するToDoがありません」メッセージ表示）
@@ -95,9 +97,11 @@ ToDoアプリケーションにタイトル・本文での部分一致検索機�
 - [x] 3. 検索ワード入力の状態管理
   - ローカルstate: `searchInput`
   - デバウンス処理（300ms）
-- [ ] 4. URL更新処理の実装
+- [x] 4. URL更新処理の実装
   - 既存のhandleConditionSaveパターンを参考
-  - 検索専用のURL更新関数作成
+  - 検索専用のURL更新関数作成 (handleSearchUpdate関数実装完了)
+  - デバウンス処理によるURL更新実装済み
+  - useCallbackによるパフォーマンス最適化実装済み
 
 ### Step 5: 検索UIの実装
 **目的**: 検索ワード入力フィールドをページに追加
@@ -163,27 +167,54 @@ if (filterParams?.searchKeyword) {
 }
 ```
 
-### デバウンス実装（page.tsx内）
+### 検索専用URL更新関数（page.tsx内）- 実装完了
 ```typescript
-const [searchInput, setSearchInput] = useState('');
+// 検索専用URL更新関数（handleConditionSaveパターンを踏襲）
+const handleSearchUpdate = useCallback((keyword: string) => {
+  try {
+    // URLSearchParamsを一度にまとめて更新（既存パターン踏襲）
+    const params = new URLSearchParams();
+    
+    // 検索キーワード設定
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword) {
+      params.set('q', trimmedKeyword);
+    }
+    
+    // 既存のフィルターパラメータを保持
+    const currentFiltersFromURL = getFiltersFromURL();
+    if (currentFiltersFromURL.priorities && currentFiltersFromURL.priorities.length > 0) {
+      params.set('priorities', currentFiltersFromURL.priorities.join(','));
+    }
+    if (currentFiltersFromURL.statuses && currentFiltersFromURL.statuses.length > 0) {
+      params.set('statuses', currentFiltersFromURL.statuses.join(','));
+    }
+    
+    // 既存のソートパラメータを保持
+    const currentSortFromURL = getSortFromURL();
+    if (currentSortFromURL !== 'created_desc') {
+      params.set('sort', currentSortFromURL);
+    }
+    
+    // URL更新を一度に実行（履歴に追加してブラウザバック対応）
+    const queryString = params.toString();
+    const urlString = queryString ? `/todos?${queryString}` : '/todos';
+    router.push(urlString);
+  } catch (error) {
+    console.error('検索URL更新エラー:', error);
+  }
+}, [currentSearchKeyword, getFiltersFromURL, getSortFromURL, router]);
 
 // デバウンス処理
 useEffect(() => {
   const timer = setTimeout(() => {
     if (searchInput !== currentSearchKeyword) {
-      // 他のパラメータを保持しながら検索キーワードを更新
-      const params = new URLSearchParams(searchParams);
-      if (searchInput) {
-        params.set('q', searchInput);
-      } else {
-        params.delete('q');
-      }
-      router.push(`/todos?${params.toString()}`);
+      handleSearchUpdate(searchInput);
     }
   }, 300);
   
   return () => clearTimeout(timer);
-}, [searchInput, currentSearchKeyword, searchParams, router]);
+}, [searchInput, currentSearchKeyword, handleSearchUpdate]);
 ```
 
 ## リスク管理
@@ -227,16 +258,47 @@ if (currentSearchKeyword) {
 - 絞り込み/並び替え条件直下に検索ワード入力フィールドを追加
 - フィルターボタンとの適切な間隔確保
 
+### 検索入力状態とURL同期の確認方法
+**現在の実装状況**: 検索入力フィールドのUIは未実装のため、以下の方法で動作確認可能
+
+#### 1. URL直接変更による確認
+1. ブラウザの開発者ツール（F12）でコンソールを開く
+2. アドレスバーで `http://localhost:3000/todos?q=テスト` にアクセス
+3. コンソールに表示されるメッセージ:
+   ```
+   🔍 searchInput状態更新: テスト
+   🔍 デバウンス処理実行: {searchInput: "テスト", currentSearchKeyword: "テスト", willUpdate: false}
+   ```
+   - `willUpdate: false` は正常動作（URL直接変更時はhandleSearchUpdateは実行されない）
+
+#### 2. テスト用ボタンによる確認（実装済み）
+1. ページをリロードし、黄色い「🔍 検索機能テスト用」ボックスを確認
+2. 「「テスト」で検索」ボタンをクリック
+3. コンソールに表示されるメッセージ:
+   ```
+   🔍 デバウンス処理実行: {searchInput: "テスト", currentSearchKeyword: "", willUpdate: true}
+   🔍 検索URL更新開始: {keyword: "テスト", currentSearchKeyword: ""}
+   🔍 検索URL更新実行: /todos?q=テスト
+   🔍 検索URL更新完了
+   🔍 searchInput状態更新: テスト
+   ```
+4. 「会議」・「クリア」ボタンでも同様の動作を確認
+
+**動作例**:
+- URL直接変更: `?q=会議` → `willUpdate: false` (正常)
+- ボタンクリック: `「会議」で検索` → `willUpdate: true` + handleSearchUpdate実行
+
 ## 現在の進捗状況
 
-**検索機能実装進捗: 87%**
+**検索機能実装進捗: 92%**
 - ✅ バックエンド実装完了（Step 1-3）
 - ✅ フック実装完了
 - ✅ 品質チェック完了（ESLint・TypeScript・Build）
 - ✅ Step 4項目1完了（useSearchKeywordフック導入・フィルター変更時キーワード保持）
 - ✅ Step 4項目2完了（filterParams統合・URLパラメータ検索実行可能）
 - ✅ Step 4項目3完了（検索ワード入力の状態管理・デバウンス処理）
-- ❌ UI入力未実装（Step 4項目4、Step 5-6）
+- ✅ Step 4項目4完了（handleSearchUpdate関数作成・パフォーマンス最適化）
+- ❌ UI入力未実装（Step 5-6）
 
 **技術的課題解決済み**:
 - フィルター機能の正常動作確認
@@ -244,10 +306,16 @@ if (currentSearchKeyword) {
 - 既存機能への影響なし
 - フィルター変更時の検索キーワード保持機能
 - filterParams統合によるURLパラメータ検索実行可能
+- デバウンス処理によるURL更新機能
+- URL変化監視とsearchInput状態同期機能
+- handleSearchUpdate関数による検索専用URL更新機能
+- useCallbackによるパフォーマンス最適化と依存関係管理
 
 **重要**: URLパラメータ `q=キーワード` での検索が動作します（検索入力UIは未実装）
+**デバッグ確認**: コンソールで `🔍 searchInput状態更新:` メッセージによりURL同期を確認可能
+**テスト用UI**: 開発環境で黄色いテストボタンが表示され、handleSearchUpdate関数の動作を確認可能
 
-**次のマイルストーン**: Step 4項目4（URL更新処理の実装）でUI準備完了
+**次のマイルストーン**: Step 5（検索UIの実装）でユーザー向け機能完成
 
 ## 成功基準
 - [x] 検索キーワードがURLに反映される（パラメータ名: `q`）
@@ -256,4 +324,4 @@ if (currentSearchKeyword) {
 - [x] 日本語検索が正常に動作する（URLパラメータで確認済み）
 - [ ] 検索フィールドのクリアボタンが機能する（UI未実装）
 - [x] 既存の機能（フィルター、ソート、モーダル）が破壊されていない
-- [ ] 検索中もUIがフリーズしない（デバウンス動作）（UI未実装）
+- [x] 検索中もUIがフリーズしない（デバウンス動作実装済み）
