@@ -101,7 +101,10 @@ export function useTodoSort() {
       }
       
       // ブラウザ履歴に追加してURL更新（scroll無効化）
-      router.push(`?${params.toString()}`, { scroll: false });
+      const queryString = params.toString();
+      const urlString = queryString ? `/todos?${queryString}` : '/todos';
+      console.log('🔍 ソートURL更新:', urlString);
+      router.push(urlString);
     } catch (error) {
       console.error('ソートURL更新エラー:', error);
       // URL更新に失敗してもアプリケーションは継続動作

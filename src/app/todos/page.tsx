@@ -280,16 +280,32 @@ function TodosPageContent() {
 
   // Phase 4: ConditionModal保存ハンドラー（フィルター統合）
   // Phase 8: ソート機能強化でSortOptionパラメータを追加
-  const handleConditionSave = async (priorities: Set<string>, statuses: Set<string>, sortOption: SortOption) => {
-    const priorityNames = Array.from(priorities);
-    const statusNames = Array.from(statuses);
+  const handleConditionSave = async (selectedPriorities: Set<string>, selectedStatuses: Set<string>, sortOption: SortOption) => {
+    const priorityNames = Array.from(selectedPriorities);
+    const statusNames = Array.from(selectedStatuses);
     
     // 名前→IDの変換
+    console.log('🔍 デバッグ - マスタデータ状態:', {
+      prioritiesData: priorities?.map(p => ({id: p.id, name: p.name})),
+      todoStatusesData: todoStatuses?.map(s => ({id: s.id, name: s.name})),
+      prioritiesLoading,
+      statusesLoading
+    });
+    
     const priorityIds = priorityNames
-      .map(name => getPriorityByName(name)?.id)
+      .map(name => {
+        const found = getPriorityByName(name);
+        console.log(`🔍 優先度検索: "${name}" → `, found);
+        return found?.id;
+      })
       .filter((id): id is string => id !== undefined);
+      
     const statusIds = statusNames
-      .map(name => getTodoStatusByName(name)?.id)
+      .map(name => {
+        const found = getTodoStatusByName(name);
+        console.log(`🔍 状態検索: "${name}" → `, found);
+        return found?.id;
+      })
       .filter((id): id is string => id !== undefined);
     
     if (process.env.NODE_ENV === 'development') {
@@ -299,10 +315,31 @@ function TodosPageContent() {
       });
     }
     
-    // URL更新（名前ベース）
-    updateFilters(priorityNames, statusNames);
-    // Phase 8: ソート機能強化でソート状態も更新
-    updateSort(sortOption);
+    // URL更新（一括処理で競合回避）
+    console.log('🔍 URL更新直前:', { priorityNames, statusNames, sortOption });
+    
+    // URLSearchParamsを一度にまとめて更新
+    const params = new URLSearchParams();
+    
+    // フィルターパラメータ設定
+    if (priorityNames.length > 0) {
+      params.set('priorities', priorityNames.join(','));
+    }
+    if (statusNames.length > 0) {
+      params.set('statuses', statusNames.join(','));
+    }
+    
+    // ソートパラメータ設定（デフォルト値以外の場合のみ）
+    if (sortOption !== 'created_desc') {
+      params.set('sort', sortOption);
+    }
+    
+    // URL更新を一度に実行（履歴に追加してブラウザバック対応）
+    const queryString = params.toString();
+    const urlString = queryString ? `/todos?${queryString}` : '/todos';
+    console.log('🔍 一括URL更新実行:', urlString);
+    router.push(urlString);
+    console.log('🔍 一括URL更新完了');
     // アクティブフィルター更新（IDベース）
     setActiveFilters({ priorityIds, statusIds });
     setShowConditionModal(false);
@@ -451,7 +488,7 @@ function TodosPageContent() {
           onLogoutClick={handleLogout}
           onAddClick={handleAddClick}
         />
-        <main className="px-2 pt-6 pb-8">
+        <main className="px-2 pt-6 pb-6">
           {/* エラーメッセージ */}
           {(error || todosError) && (
             <div className="mb-4 text-red-600 font-semibold text-sm text-center">
@@ -460,13 +497,18 @@ function TodosPageContent() {
           )}
 
           {/* フィルターボタン */}
-          <div className="flex flex-col mb-6 bg-white/30 rounded-xl p-4 border border-white/20 shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-2">
+          <div className="flex flex-col mb-6 bg-white/30 rounded-xl border border-white/20 shadow">
+            {/* 検索条件ヘッダー */}
+            <div className="px-4 py-2 border-b border-white/30">
+              <h3 className="text-sm font-semibold text-gray-700">検索条件</h3>
+            </div>
+            
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2">
                   <>
                     {/* フィルター条件表示 */}
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700 font-medium">条件：</span>
                       {hasActiveFilters ? (
                         <div className="flex items-center gap-3">
                           {/* 優先度バッジ */}
@@ -498,11 +540,6 @@ function TodosPageContent() {
                         <span className="text-sm text-gray-500">なし</span>
                       )}
                     </div>
-                    {/* 該当件数表示 */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-700 font-medium">該当件数：</span>
-                      <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
-                    </div>
                   </>
               </div>
               <div className="flex items-center gap-2">
@@ -516,16 +553,44 @@ function TodosPageContent() {
                     className="text-[#374151]"
                   />
                 </button>
+                </div>
               </div>
             </div>
           </div>
           {/* ToDoリスト */}
-          <div className="space-y-4">
-            {todos.map(todo => (
-              <div
-                key={todo.id}
-                className="bg-white/30 rounded-xl p-4 border border-white/20 shadow relative group"
-              >
+          <div className="bg-white/30 rounded-xl border border-white/20 shadow">
+            {/* ToDoヘッダー */}
+            <div className="px-4 py-2 border-b border-white/30 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700">ToDo</h3>
+              <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
+            </div>
+            
+            {todos.map((todo, index) => {
+              const isFirst = index === 0;
+              const isLast = index === todos.length - 1;
+              const isSingle = todos.length === 1;
+              
+              let roundedClass = '';
+              let borderClass = '';
+              if (isSingle) {
+                roundedClass = 'rounded-xl';
+                borderClass = '';
+              } else if (isFirst) {
+                roundedClass = 'rounded-t-xl';
+                borderClass = 'border-b border-white/20';
+              } else if (isLast) {
+                roundedClass = 'rounded-b-xl';
+                borderClass = '';
+              } else {
+                roundedClass = 'rounded-none';
+                borderClass = 'border-b border-white/20';
+              }
+              
+              return (
+                <div
+                  key={todo.id}
+                  className={`${roundedClass} ${borderClass} p-4 relative group`}
+                >
                 {/* メニューボタン */}
                 <button
                   onClick={(e) => toggleMenu(todo.id, e)}
@@ -561,8 +626,9 @@ function TodosPageContent() {
                   </div>
                   <div className="text-text text-sm whitespace-pre-wrap mt-2">{todo.todo_text}</div>
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </main>
       </div>

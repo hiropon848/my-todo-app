@@ -108,7 +108,15 @@ export function useURLFilters() {
       }
       
       // ブラウザ履歴に追加してURL更新（scroll無効化）
-      router.push(`?${params.toString()}`, { scroll: false });
+      const queryString = params.toString();
+      const urlString = queryString ? `/todos?${queryString}` : '/todos';
+      console.log('🔍 router.replace実行:', urlString);
+      console.log('🔍 router instance:', router);
+      console.log('🔍 パラメータ詳細:', params.toString());
+      
+      // Next.js 15のApp Router対応: 履歴に追加してブラウザバック対応
+      router.push(urlString);
+      console.log('🔍 router.replace完了');
     } catch (error) {
       console.error('URL更新エラー:', error);
       // URL更新に失敗してもアプリケーションは継続動作
