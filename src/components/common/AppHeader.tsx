@@ -57,7 +57,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
     </div>
     <div className="w-full bg-blue-100/70 border-t border-white/30 text-text text-center py-1">
-      <span className="text-sm font-medium text-text">ようこそ {userName}</span>
+      <span className="text-sm font-medium text-text">ようこそ {userName} さん</span>
     </div>
   </header>
   );

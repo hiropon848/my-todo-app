@@ -142,6 +142,13 @@ export function ConditionModal({
     setSelectedSortOption(sortValue as SortOption);
   };
 
+  // 条件をクリアするハンドラー
+  const handleClearAll = () => {
+    setSelectedPriorities(new Set());
+    setSelectedStatuses(new Set());
+    setSelectedSortOption('created_desc');
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -289,19 +296,32 @@ export function ConditionModal({
 
           {/* Phase 8: ソート機能強化で追加（ソート選択） */}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">ソート</label>
+            <label className="block text-sm font-medium text-text mb-1">並び替え</label>
             <CustomSelect
               id="sort-select"
               value={selectedSortOption}
               onChange={handleSortChange}
               options={sortOptions}
-              placeholder="ソート方法を選択"
+              placeholder="並び替え順を選択"
               className=""
             />
           </div>
+        </div>
 
-          {/* フッターボタン */}
-          <div className="mt-6">
+        <div className="px-6 py-4 border-t border-white/30 rounded-b-2xl">
+          <div className="space-y-3">
+            {/* 条件をクリアボタン */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleClearAll}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white text-base font-bold rounded-[2rem] hover:bg-gray-600 transition-colors"
+                disabled={isSaving}
+              >
+                条件をクリア
+              </button>
+            </div>
+            
+            {/* キャンセル・OKボタン */}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={handleCancel}

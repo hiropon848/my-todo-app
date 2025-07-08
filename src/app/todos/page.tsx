@@ -309,11 +309,6 @@ function TodosPageContent() {
     return true;
   };
 
-  // Phase 5: フィルタークリア機能
-  const handleClearFilters = () => {
-    updateFilters([], []);
-    setActiveFilters({ priorityIds: [], statusIds: [] });
-  };
 
   useEffect(() => {
     if (!prioritiesLoading && !statusesLoading && priorities && todoStatuses) {
@@ -511,14 +506,6 @@ function TodosPageContent() {
                   </>
               </div>
               <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <button
-                    onClick={handleClearFilters}
-                    className="text-sm text-gray-600 hover:text-gray-800 transition-colors px-3 py-1 rounded-md hover:bg-black/5"
-                  >
-                    クリア
-                  </button>
-                )}
                 <button
                   onClick={handleConditionModalOpen}
                   className="p-3 rounded-full hover:bg-black/10 transition-colors"
@@ -542,9 +529,9 @@ function TodosPageContent() {
                 {/* メニューボタン */}
                 <button
                   onClick={(e) => toggleMenu(todo.id, e)}
-                  className="absolute top-4 right-4 p-2 hover:bg-black/10 rounded-full transition-colors"
+                  className="absolute top-4 right-4 p-3 hover:bg-black/10 rounded-full transition-colors"
                 >
-                  <SubMenuIcon width="20" height="20" className="text-[#374151]" />
+                  <SubMenuIcon width="22" height="22" className="text-[#374151]" />
                 </button>
 
                 {/* メニュー */}
