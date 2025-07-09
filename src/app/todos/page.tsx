@@ -27,6 +27,7 @@ import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { useTodoSort } from '@/hooks/useTodoSort';
 import { useSearchKeyword } from '@/hooks/useSearchKeyword';
 import { SortOption } from '@/types/todo';
+import { TodoListLoadingOverlay } from '@/components/common/TodoListLoadingOverlay';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -94,6 +95,7 @@ function TodosPageContent() {
   const { 
     todos, 
     isLoading: loading, 
+    isFetchTodosLoading, // 🔴 新規: 部分ローディング
     error: todosError, 
     deleteTodo, 
     isToggleLoading: _isToggleLoading,
@@ -675,12 +677,15 @@ function TodosPageContent() {
             </div>
           </div>
           {/* ToDoリスト */}
-          <div className="bg-white/30 rounded-xl border border-white/20 shadow">
+          <div className="bg-white/30 rounded-xl border border-white/20 shadow relative">
             {/* ToDoヘッダー */}
             <div className="px-4 py-2 border-b border-white/30 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">ToDo</h3>
               <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
             </div>
+            
+            {/* 検索実行時の部分ローディングオーバーレイ */}
+            <TodoListLoadingOverlay isVisible={isFetchTodosLoading} />
             
             {todos.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">

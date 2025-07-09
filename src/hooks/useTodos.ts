@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Todo, SortOption } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
@@ -16,6 +16,7 @@ export function useTodos(userId: string | null, filterParams?: {
   const [isAddTodoLoading, setIsAddTodoLoading] = useState(false);
   const [isUpdateTodoLoading, setIsUpdateTodoLoading] = useState(false);
   const [isDeleteTodoLoading, setIsDeleteTodoLoading] = useState(false);
+  const [isFetchTodosLoading, setIsFetchTodosLoading] = useState(false); // 🔴 新規追加
 
   // Priority情報を取得
   const { getDefaultPriorityId } = useTodoPriorities();
@@ -47,12 +48,18 @@ export function useTodos(userId: string | null, filterParams?: {
   }, []);
 
   // データ取得関数を分離（再利用可能にする）
-  const fetchTodos = useCallback(async () => {
+  const fetchTodos = useCallback(async (showMainLoading = true) => {
     if (!userId) {
       setIsLoading(true);
       return;
     }
-    setIsLoading(true);
+    
+    // 🔴 ローディング状態の分岐: 初回・認証時は全画面、検索・フィルター時は部分ローディング
+    if (showMainLoading) {
+      setIsLoading(true);
+    } else {
+      setIsFetchTodosLoading(true);
+    }
     setError('');
     try {
       // 基本クエリを構築（既存と同じ）
@@ -165,7 +172,12 @@ export function useTodos(userId: string | null, filterParams?: {
       
       setTodos([]);
     } finally {
-      setIsLoading(false);
+      // 🔴 適切なローディング状態解除
+      if (showMainLoading) {
+        setIsLoading(false);
+      } else {
+        setIsFetchTodosLoading(false);
+      }
     }
   }, [userId, filterParams, applySortToQuery]); // useCallbackの依存配列（Phase 8: ソート機能対応）
 
@@ -286,8 +298,8 @@ export function useTodos(userId: string | null, filterParams?: {
       );
       
       if (hasActiveFilters) {
-        // フィルター適用時: 完全なデータ再取得でフィルタリングを再実行
-        await fetchTodos();
+        // フィルター適用時: 部分ローディングで再取得
+        await fetchTodos(false); // showMainLoading = false
       } else {
         // フィルターなし時: 既存の個別追加ロジックを維持（パフォーマンス重視）
         setTodos(prev => [inserted, ...prev]);
@@ -346,8 +358,8 @@ export function useTodos(userId: string | null, filterParams?: {
       );
       
       if (hasActiveFilters) {
-        // フィルター適用時: 完全なデータ再取得でフィルタリングを再実行
-        await fetchTodos();
+        // フィルター適用時: 部分ローディングで再取得
+        await fetchTodos(false); // showMainLoading = false
       } else {
         // フィルターなし時: 既存の個別更新ロジックを維持（パフォーマンス重視）
         const { data: updatedTodo, error: fetchError } = await supabase
@@ -378,6 +390,7 @@ export function useTodos(userId: string | null, filterParams?: {
     todos, 
     setTodos, 
     isLoading, 
+    isFetchTodosLoading, // 🔴 新規: 部分ローディング
     error, 
     deleteTodo, 
     isToggleLoading,
