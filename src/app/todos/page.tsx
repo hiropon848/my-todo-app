@@ -16,6 +16,8 @@ import { Toast } from '@/components/common/Toast';
 import { useToast } from '@/hooks/useToast';
 import SubMenuIcon from '@/icons/menu-sub.svg';
 import SortAndFilterIcon from '@/icons/sort-and-filter.svg';
+import SearchIcon from '@/icons/search.svg';
+import CloseIcon from '@/icons/close.svg';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useProfile } from '@/hooks/useProfile';
@@ -78,11 +80,6 @@ function TodosPageContent() {
   }>({ priorityIds: [], statusIds: [] });
 
 
-  const hasActiveFilters = useMemo(() => {
-    return activeFilters.priorityIds.length > 0 || 
-           activeFilters.statusIds.length > 0 || 
-           (currentSearchKeyword && currentSearchKeyword.trim() !== ''); // Phase 7: 検索キーワードもフィルターとして扱う
-  }, [activeFilters.priorityIds.length, activeFilters.statusIds.length, currentSearchKeyword]);
 
   const filterParams = useMemo(() => {
     return {
@@ -333,7 +330,7 @@ function TodosPageContent() {
     
     // Phase 7: 検索キーワード保持（フィルター変更時に検索キーワードを維持）
     if (currentSearchKeyword) {
-      params.set('q', currentSearchKeyword);
+      params.set('keyword', currentSearchKeyword);
     }
     
     // フィルターパラメータ設定
@@ -440,8 +437,6 @@ function TodosPageContent() {
   useEffect(() => {
     // URLの検索キーワードと入力フィールドを同期
     setSearchInput(currentSearchKeyword);
-    // 一時的なデバッグ出力
-    console.log('🔍 searchInput状態更新:', currentSearchKeyword);
   }, [currentSearchKeyword]);
 
   // Phase 7: 検索専用URL更新関数（handleConditionSaveパターンを踏襲）
@@ -457,9 +452,9 @@ function TodosPageContent() {
       // 検索キーワード設定
       const trimmedKeyword = keyword.trim();
       if (trimmedKeyword) {
-        params.set('q', trimmedKeyword);
+        params.set('keyword', trimmedKeyword);
       }
-      // 空の場合はparams.delete('q')ではなく、パラメータ自体を設定しない
+      // 空の場合はparams.delete('keyword')ではなく、パラメータ自体を設定しない
       
       // 既存のフィルターパラメータを保持（handleConditionSaveと同じ方式）
       const currentFiltersFromURL = getFiltersFromURL();
@@ -495,18 +490,11 @@ function TodosPageContent() {
     }
   }, [currentSearchKeyword, getFiltersFromURL, getSortFromURL, router]);
 
-  // Phase 7: 検索ワード入力のデバウンス処理
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 デバウンス処理実行:', { searchInput, currentSearchKeyword, willUpdate: searchInput !== currentSearchKeyword });
-      }
-      if (searchInput !== currentSearchKeyword) {
-        handleSearchUpdate(searchInput);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timer);
+  // Phase 7: 検索実行関数（Enter時・フォーカス離脱時に実行）
+  const executeSearch = useCallback(() => {
+    if (searchInput !== currentSearchKeyword) {
+      handleSearchUpdate(searchInput);
+    }
   }, [searchInput, currentSearchKeyword, handleSearchUpdate]);
 
   const handleConditionModalOpen = () => {
@@ -584,33 +572,6 @@ function TodosPageContent() {
             </div>
           )}
 
-          {/* 一時的なテスト用ボタン（Step 5実装時に削除予定） */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-xl">
-              <p className="text-sm font-bold mb-2">🔍 検索機能テスト用</p>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setSearchInput('テスト')}
-                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
-                >
-                  「テスト」で検索
-                </button>
-                <button 
-                  onClick={() => setSearchInput('会議')}
-                  className="px-3 py-1 bg-green-500 text-white rounded text-sm"
-                >
-                  「会議」で検索
-                </button>
-                <button 
-                  onClick={() => setSearchInput('')}
-                  className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-                >
-                  クリア
-                </button>
-              </div>
-              <p className="text-xs mt-2">現在の検索入力: 「{searchInput}」</p>
-            </div>
-          )}
 
           {/* フィルターボタン */}
           <div className="flex flex-col mb-6 bg-white/30 rounded-xl border border-white/20 shadow">
@@ -620,45 +581,41 @@ function TodosPageContent() {
             </div>
             
             <div className="px-4 py-2">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-2">
-                  <>
-                    {/* フィルター条件表示 */}
-                    <div className="flex items-center gap-2">
-                      {hasActiveFilters ? (
-                        <div className="flex items-center gap-3">
-                          {/* 優先度バッジ */}
-                          {activeFilters.priorityIds.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-600">[優先度]</span>
-                              {activeFilters.priorityIds.map(id => {
-                                const priority = priorities?.find(p => p.id === id);
-                                return priority ? (
-                                  <PriorityBadge key={priority.id} priority={priority} size="sm" />
-                                ) : null;
-                              })}
-                            </div>
-                          )}
-                          {/* ステータスバッジ */}
-                          {activeFilters.statusIds.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-600">[状態]</span>
-                              {activeFilters.statusIds.map(id => {
-                                const status = todoStatuses?.find(s => s.id === id);
-                                return status ? (
-                                  <StatusBadge key={status.id} status={status} size="sm" />
-                                ) : null;
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">絞り込み/並び替え なし</span>
-                      )}
-                    </div>
-                  </>
-              </div>
-              <div className="flex items-center gap-2">
+              {/* フィルター条件表示とボタン */}
+              <div className="flex items-center justify-between mb-3">
+                {/* 優先度・状態のフィルター有無のみで判定（検索キーワードは除外） */}
+                {(activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0) ? (
+                  <div className="flex items-center gap-3">
+                    {/* 優先度バッジ */}
+                    {activeFilters.priorityIds.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-600">[優先度]</span>
+                        {activeFilters.priorityIds.map(id => {
+                          const priority = priorities?.find(p => p.id === id);
+                          return priority ? (
+                            <PriorityBadge key={priority.id} priority={priority} size="sm" />
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                    {/* ステータスバッジ */}
+                    {activeFilters.statusIds.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-600">[状態]</span>
+                        {activeFilters.statusIds.map(id => {
+                          const status = todoStatuses?.find(s => s.id === id);
+                          return status ? (
+                            <StatusBadge key={status.id} status={status} size="sm" />
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-500">絞り込み/並び替え なし</span>
+                )}
+                
+                {/* フィルター/ソートボタン */}
                 <button
                   onClick={handleConditionModalOpen}
                   className="p-3 rounded-full hover:bg-black/10 transition-colors"
@@ -669,7 +626,51 @@ function TodosPageContent() {
                     className="text-[#374151]"
                   />
                 </button>
-                </div>
+              </div>
+              
+              {/* 検索フィールド */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      executeSearch();
+                    }
+                  }}
+                  onBlur={executeSearch}
+                  placeholder="タイトルまたは本文"
+                  className="w-full pl-10 pr-10 py-2 bg-white/50 border border-white/30 rounded-lg 
+                           text-sm placeholder-gray-500 focus:outline-none focus:ring-2 
+                           focus:ring-blue-500/30 focus:border-blue-500/50
+                           backdrop-blur-sm transition-all duration-300"
+                />
+                <SearchIcon 
+                  width="20" 
+                  height="20" 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+                {/* クリアボタン */}
+                {searchInput && (
+                  <button
+                    onClick={() => {
+                      setSearchInput('');
+                      // クリア時は即座に検索実行（空文字での検索）
+                      if (currentSearchKeyword) {
+                        handleSearchUpdate('');
+                      }
+                    }}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-black/10 rounded-full transition-colors"
+                    aria-label="検索をクリア"
+                  >
+                    <CloseIcon 
+                      width="16" 
+                      height="16" 
+                      className="text-gray-600"
+                    />
+                  </button>
+                )}
               </div>
             </div>
           </div>

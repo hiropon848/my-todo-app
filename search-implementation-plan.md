@@ -105,14 +105,16 @@ ToDoアプリケーションにタイトル・本文での部分一致検索機�
 
 ### Step 5: 検索UIの実装
 **目的**: 検索ワード入力フィールドをページに追加
-- [ ] 1. 検索条件ブロック内への配置
+- [x] 1. 検索条件ブロック内への配置
   - 絞り込み/並び替え条件直下に検索ワード入力フィールドを追加
   - ガラスモーフィズムUIで統一
-- [ ] 2. 検索フィールドの実装
-  - インラインSVGアイコン（虫眼鏡）
-  - プレースホルダー: "タイトル・本文を検索"
-  - クリアボタン（×）表示制御
-- [ ] 3. レスポンシブ対応
+  - フィルター/ソートボタンと優先度・状態バッジを同一行に配置
+- [x] 2. 検索フィールドの実装
+  - SearchIcon（/icons/search.svg）の使用
+  - プレースホルダー: "タイトルまたは本文"
+  - CloseIcon（/icons/close.svg）を使用したクリアボタン（×）表示制御
+  - Enter/blur時の検索実行（IME入力対応）
+- [x] 3. レスポンシブ対応
   - モバイルビューでの適切な表示
 
 ### Step 6: 統合テストと調整
@@ -127,7 +129,7 @@ ToDoアプリケーションにタイトル・本文での部分一致検索機�
 
 ### URLパラメータ仕様
 ```
-/todos?q=検索キーワード&priorities=高,中&statuses=未着手&sort=created_desc
+/todos?keyword=検索キーワード&priorities=高,中&statuses=未着手&sort=created_desc
 ```
 
 ### useSearchKeywordフック実装例
@@ -139,7 +141,7 @@ export function useSearchKeyword() {
   
   // URLからの読み取り（既存パターン踏襲）
   useEffect(() => {
-    const keyword = searchParams.get('q') || '';
+    const keyword = searchParams.get('keyword') || '';
     setCurrentSearchKeyword(keyword);
   }, [searchParams]);
   
@@ -147,9 +149,9 @@ export function useSearchKeyword() {
   const updateSearchKeyword = (keyword: string) => {
     const params = new URLSearchParams(searchParams);
     if (keyword) {
-      params.set('q', keyword);
+      params.set('keyword', keyword);
     } else {
-      params.delete('q');
+      params.delete('keyword');
     }
     router.push(`/todos?${params.toString()}`);
   };
@@ -248,7 +250,7 @@ useEffect(() => {
 // handleConditionSave内で検索キーワードも含める
 const params = new URLSearchParams();
 if (currentSearchKeyword) {
-  params.set('q', currentSearchKeyword); // 検索キーワード保持
+  params.set('keyword', currentSearchKeyword); // 検索キーワード保持
 }
 // ... 他のパラメータ設定
 ```
@@ -263,7 +265,7 @@ if (currentSearchKeyword) {
 
 #### 1. URL直接変更による確認
 1. ブラウザの開発者ツール（F12）でコンソールを開く
-2. アドレスバーで `http://localhost:3000/todos?q=テスト` にアクセス
+2. アドレスバーで `http://localhost:3000/todos?keyword=テスト` にアクセス
 3. コンソールに表示されるメッセージ:
    ```
    🔍 searchInput状態更新: テスト
@@ -278,19 +280,19 @@ if (currentSearchKeyword) {
    ```
    🔍 デバウンス処理実行: {searchInput: "テスト", currentSearchKeyword: "", willUpdate: true}
    🔍 検索URL更新開始: {keyword: "テスト", currentSearchKeyword: ""}
-   🔍 検索URL更新実行: /todos?q=テスト
+   🔍 検索URL更新実行: /todos?keyword=テスト
    🔍 検索URL更新完了
    🔍 searchInput状態更新: テスト
    ```
 4. 「会議」・「クリア」ボタンでも同様の動作を確認
 
 **動作例**:
-- URL直接変更: `?q=会議` → `willUpdate: false` (正常)
+- URL直接変更: `?keyword=会議` → `willUpdate: false` (正常)
 - ボタンクリック: `「会議」で検索` → `willUpdate: true` + handleSearchUpdate実行
 
 ## 現在の進捗状況
 
-**検索機能実装進捗: 92%**
+**検索機能実装進捗: 95%**
 - ✅ バックエンド実装完了（Step 1-3）
 - ✅ フック実装完了
 - ✅ 品質チェック完了（ESLint・TypeScript・Build）
@@ -298,7 +300,8 @@ if (currentSearchKeyword) {
 - ✅ Step 4項目2完了（filterParams統合・URLパラメータ検索実行可能）
 - ✅ Step 4項目3完了（検索ワード入力の状態管理・デバウンス処理）
 - ✅ Step 4項目4完了（handleSearchUpdate関数作成・パフォーマンス最適化）
-- ❌ UI入力未実装（Step 5-6）
+- ✅ Step 5完了（検索UIの実装・Enter/blur検索・アイコン統一・レイアウト最適化）
+- ❌ 統合テストと調整（Step 6）
 
 **技術的課題解決済み**:
 - フィルター機能の正常動作確認
@@ -306,22 +309,27 @@ if (currentSearchKeyword) {
 - 既存機能への影響なし
 - フィルター変更時の検索キーワード保持機能
 - filterParams統合によるURLパラメータ検索実行可能
-- デバウンス処理によるURL更新機能
+- Enter/blur検索実行によるIME入力対応（デバウンス処理からの変更）
 - URL変化監視とsearchInput状態同期機能
 - handleSearchUpdate関数による検索専用URL更新機能
 - useCallbackによるパフォーマンス最適化と依存関係管理
+- アイコン統一（検索・クリアボタンでIconコンポーネント使用）
+- レイアウト最適化（フィルター/ソートボタンと優先度・状態バッジ同一行配置）
 
-**重要**: URLパラメータ `q=キーワード` での検索が動作します（検索入力UIは未実装）
-**デバッグ確認**: コンソールで `🔍 searchInput状態更新:` メッセージによりURL同期を確認可能
-**テスト用UI**: 開発環境で黄色いテストボタンが表示され、handleSearchUpdate関数の動作を確認可能
+**実装済み機能**:
+- URLパラメータ `keyword=キーワード` での検索機能
+- 検索入力UI（SearchIcon・CloseIcon使用）
+- Enter/blur時の検索実行（IME対応）
+- 検索キーワードによるToDoフィルタリング
+- フィルター表示ロジック修正（検索キーワード除外）
 
-**次のマイルストーン**: Step 5（検索UIの実装）でユーザー向け機能完成
+**次のマイルストーン**: Step 6（統合テストと調整）で検索機能完成
 
 ## 成功基準
-- [x] 検索キーワードがURLに反映される（パラメータ名: `q`）
+- [x] 検索キーワードがURLに反映される（パラメータ名: `keyword`）
 - [x] ブラウザの戻る/進むボタンで検索履歴を辿れる
 - [x] フィルター・ソート変更時に検索キーワードが保持される
-- [x] 日本語検索が正常に動作する（URLパラメータで確認済み）
-- [ ] 検索フィールドのクリアボタンが機能する（UI未実装）
+- [x] 日本語検索が正常に動作する（Enter/blur時実行）
+- [x] 検索フィールドのクリアボタンが機能する（CloseIcon使用）
 - [x] 既存の機能（フィルター、ソート、モーダル）が破壊されていない
-- [x] 検索中もUIがフリーズしない（デバウンス動作実装済み）
+- [x] 検索中もUIがフリーズしない（Enter/blur時実行によりIME対応）

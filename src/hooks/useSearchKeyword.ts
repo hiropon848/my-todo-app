@@ -24,7 +24,7 @@ export function useSearchKeyword() {
   // URLパラメータの変化を監視
   useEffect(() => {
     if (isReady) {
-      const searchKeyword = searchParams.get('q') || '';
+      const searchKeyword = searchParams.get('keyword') || '';
       
       if (process.env.NODE_ENV === 'development') {
         console.log('🔄 検索キーワードURL変化検知:', { 
@@ -76,9 +76,9 @@ export function useSearchKeyword() {
       // 空文字またはトリム後空の場合はパラメータを削除
       const trimmedKeyword = keyword.trim();
       if (trimmedKeyword === '') {
-        params.delete('q');
+        params.delete('keyword');
       } else {
-        params.set('q', trimmedKeyword);
+        params.set('keyword', trimmedKeyword);
       }
       
       // ブラウザ履歴に追加してURL更新（scroll無効化）
