@@ -595,7 +595,7 @@ function TodosPageContent() {
           console.log('🟡 フラグOFF設定:', { before: isExecutingSearchRef.current });
           isExecutingSearchRef.current = false;
           console.log('🟡 フラグOFF確認:', { after: isExecutingSearchRef.current });
-        }, 100);
+        }, 10);
       }
     } else {
       console.log('🔵 executeSearch条件不成立でスキップ');

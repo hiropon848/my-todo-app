@@ -202,16 +202,28 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
 
   if (!isOpen) return null;
 
+  // 背景スタイルのデバッグログ
+  const backgroundStyle = {
+    background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+    backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+    WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+  };
+  
+  console.log('🔴 TodoAddModal 背景状態:', {
+    isOpen,
+    showModal,
+    backgroundStyle,
+    className: `fixed inset-0 z-[70] flex items-center justify-center px-4 transition-all duration-300 ${
+      showModal ? 'opacity-100' : 'opacity-0'
+    }`
+  });
+
   return (
     <div 
       className={`fixed inset-0 z-[70] flex items-center justify-center px-4 transition-all duration-300 ${
         showModal ? 'opacity-100' : 'opacity-0'
       }`}
-      style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-      }}
+      style={backgroundStyle}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           // 背景マウスダウン時に即座にキャンセルフラグを設定
