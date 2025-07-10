@@ -108,7 +108,8 @@ function TodosPageContent() {
     isAddTodoLoading: _isAddTodoLoading,
     isUpdateTodoLoading: _isUpdateTodoLoading,
     isDeleteTodoLoading: _isDeleteTodoLoading,
-    isExecutingSearchRef // Step 5: 検索実行フラグ
+    isExecutingSearchRef, // Step 5: 検索実行フラグ
+    isSearchExecutedRef // 検索実行済みフラグ
   } = useTodos(user?.id || null, filterParams);
   
   // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
@@ -579,6 +580,9 @@ function TodosPageContent() {
         
         // データを直接更新（URL変更によるuseEffect実行を避ける）
         setTodos(sortedData);
+        
+        // 検索実行済みフラグをON（useTodos側での重複実行を防ぐ）
+        isSearchExecutedRef.current = true;
         
       } catch (error) {
         console.error('検索実行エラー:', error);

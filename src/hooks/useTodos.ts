@@ -18,6 +18,11 @@ export function useTodos(userId: string | null, filterParams?: {
   const [isDeleteTodoLoading, setIsDeleteTodoLoading] = useState(false);
   const [isFetchTodosLoading, setIsFetchTodosLoading] = useState(false); // 🔴 新規追加
   const isExecutingSearchRef = useRef(false); // Step 5: 検索実行中フラグ
+  
+  // 前回のfilterParamsを保持（検索キーワードのみの変更を検知するため）
+  const prevFilterParamsRef = useRef<typeof filterParams>(filterParams);
+  // 検索実行済みフラグ（executeSearchによる実行後の重複を防ぐ）
+  const isSearchExecutedRef = useRef(false);
 
   // Priority情報を取得
   const { getDefaultPriorityId } = useTodoPriorities();
@@ -183,22 +188,42 @@ export function useTodos(userId: string | null, filterParams?: {
   }, [userId, filterParams, applySortToQuery]); // useCallbackの依存配列（Phase 8: ソート機能対応）
 
   useEffect(() => {
-    // Step 5: 検索実行直後のURL起因重複実行を回避
-    console.log('🔴 useTodos useEffect実行:', { 
-      isExecutingSearch: isExecutingSearchRef.current,
-      refInstance: isExecutingSearchRef,
-      fetchTodosChange: 'fetchTodos dependency changed',
-      userId,
-      filterParams: JSON.stringify(filterParams)
-    });
+    // 検索キーワードのみが変更されたかを判定
+    const prev = prevFilterParamsRef.current;
+    const current = filterParams;
     
-    if (!isExecutingSearchRef.current) {
-      console.log('🔴 fetchTodos実行許可（フラグfalse）');
-      fetchTodos();
+    if (prev && current) {
+      // 各パラメータを個別に比較
+      const isPriorityIdsEqual = 
+        JSON.stringify(prev.priorityIds?.sort()) === JSON.stringify(current.priorityIds?.sort());
+      const isStatusIdsEqual = 
+        JSON.stringify(prev.statusIds?.sort()) === JSON.stringify(current.statusIds?.sort());
+      const isSortOptionEqual = prev.sortOption === current.sortOption;
+      const isSearchKeywordChanged = prev.searchKeyword !== current.searchKeyword;
+      
+      // 検索キーワードのみが変更された場合
+      if (isPriorityIdsEqual && isStatusIdsEqual && isSortOptionEqual && isSearchKeywordChanged) {
+        console.log('🔵 検索キーワードのみ変更を検知 → 部分ローディング');
+        // executeSearchで既に実行済みの場合はスキップ
+        if (isSearchExecutedRef.current) {
+          console.log('🔵 executeSearchで実行済みのためスキップ');
+          isSearchExecutedRef.current = false; // フラグをリセット
+        } else {
+          fetchTodos(false); // 部分ローディング
+        }
+      } else {
+        console.log('🔵 その他の変更を検知 → 全画面ローディング');
+        fetchTodos(true); // 全画面ローディング
+      }
     } else {
-      console.log('🔴 fetchTodos実行スキップ（フラグtrue）');
+      // 初回実行時
+      console.log('🔵 初回実行 → 全画面ローディング');
+      fetchTodos(true);
     }
-  }, [fetchTodos]); // fetchTodosが変化したときに実行
+    
+    // 現在のfilterParamsを保存
+    prevFilterParamsRef.current = filterParams;
+  }, [fetchTodos, filterParams]); // fetchTodosが変化したときに実行
 
   // ToDo削除ロジック
   const deleteTodo = async (id: string) => {
@@ -428,6 +453,7 @@ export function useTodos(userId: string | null, filterParams?: {
     isUpdateTodoLoading,
     isDeleteTodoLoading,
     updateTodo,
-    isExecutingSearchRef // Step 5: 検索実行フラグを外部に公開
+    isExecutingSearchRef, // Step 5: 検索実行フラグを外部に公開
+    isSearchExecutedRef // 検索実行済みフラグを外部に公開
   };
 }
