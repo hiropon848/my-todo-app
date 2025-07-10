@@ -17,6 +17,7 @@ export function useTodos(userId: string | null, filterParams?: {
   const [isUpdateTodoLoading, setIsUpdateTodoLoading] = useState(false);
   const [isDeleteTodoLoading, setIsDeleteTodoLoading] = useState(false);
   const [isFetchTodosLoading, setIsFetchTodosLoading] = useState(false); // 🔴 新規追加
+  const isExecutingSearchRef = useRef(false); // Step 5: 検索実行中フラグ
 
   // Priority情報を取得
   const { getDefaultPriorityId } = useTodoPriorities();
@@ -182,7 +183,21 @@ export function useTodos(userId: string | null, filterParams?: {
   }, [userId, filterParams, applySortToQuery]); // useCallbackの依存配列（Phase 8: ソート機能対応）
 
   useEffect(() => {
-    fetchTodos();
+    // Step 5: 検索実行直後のURL起因重複実行を回避
+    console.log('🔴 useTodos useEffect実行:', { 
+      isExecutingSearch: isExecutingSearchRef.current,
+      refInstance: isExecutingSearchRef,
+      fetchTodosChange: 'fetchTodos dependency changed',
+      userId,
+      filterParams: JSON.stringify(filterParams)
+    });
+    
+    if (!isExecutingSearchRef.current) {
+      console.log('🔴 fetchTodos実行許可（フラグfalse）');
+      fetchTodos();
+    } else {
+      console.log('🔴 fetchTodos実行スキップ（フラグtrue）');
+    }
   }, [fetchTodos]); // fetchTodosが変化したときに実行
 
   // ToDo削除ロジック
@@ -193,10 +208,24 @@ export function useTodos(userId: string | null, filterParams?: {
       if (deleteError) {
         throw deleteError;
       }
-      // 削除成功時のみUIを更新
-      setTodos(prev => prev.filter(todo => todo.id !== id));
+      
+      // 削除成功時: 登録・編集時と同じパターンでデータ再取得
+      // フィルターまたはソートが適用されている場合は完全なデータ再取得
+      const hasActiveFilters = filterParams && (
+        (filterParams.priorityIds && filterParams.priorityIds.length > 0) || 
+        (filterParams.statusIds && filterParams.statusIds.length > 0) ||
+        (filterParams.sortOption && filterParams.sortOption !== 'created_desc') || // デフォルト以外のソート
+        (filterParams.searchKeyword && filterParams.searchKeyword.trim()) // 検索キーワードも判定に追加
+      );
+      
+      if (hasActiveFilters) {
+        // フィルター適用時: 部分ローディングで再取得
+        await fetchTodos(false); // showMainLoading = false
+      } else {
+        // フィルターなし時: 既存の個別削除ロジックを維持（パフォーマンス重視）
+        setTodos(prev => prev.filter(todo => todo.id !== id));
+      }
     } catch (error) {
-      setError('削除に失敗しました');
       throw error;
     } finally {
       setIsDeleteTodoLoading(false);
@@ -298,8 +327,8 @@ export function useTodos(userId: string | null, filterParams?: {
       );
       
       if (hasActiveFilters) {
-        // フィルター適用時: 部分ローディングで再取得
-        await fetchTodos(false); // showMainLoading = false
+        // フィルター適用時: 全体ローディングで再取得
+        await fetchTodos(); // showMainLoading = true (デフォルト)
       } else {
         // フィルターなし時: 既存の個別追加ロジックを維持（パフォーマンス重視）
         setTodos(prev => [inserted, ...prev]);
@@ -358,8 +387,8 @@ export function useTodos(userId: string | null, filterParams?: {
       );
       
       if (hasActiveFilters) {
-        // フィルター適用時: 部分ローディングで再取得
-        await fetchTodos(false); // showMainLoading = false
+        // フィルター適用時: 全体ローディングで再取得
+        await fetchTodos(); // showMainLoading = true (デフォルト)
       } else {
         // フィルターなし時: 既存の個別更新ロジックを維持（パフォーマンス重視）
         const { data: updatedTodo, error: fetchError } = await supabase
@@ -398,6 +427,7 @@ export function useTodos(userId: string | null, filterParams?: {
     isAddTodoLoading,
     isUpdateTodoLoading,
     isDeleteTodoLoading,
-    updateTodo
+    updateTodo,
+    isExecutingSearchRef // Step 5: 検索実行フラグを外部に公開
   };
 }

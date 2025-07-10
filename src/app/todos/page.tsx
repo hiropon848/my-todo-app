@@ -28,6 +28,7 @@ import { useTodoSort } from '@/hooks/useTodoSort';
 import { useSearchKeyword } from '@/hooks/useSearchKeyword';
 import { SortOption } from '@/types/todo';
 import { TodoListLoadingOverlay } from '@/components/common/TodoListLoadingOverlay';
+import { supabase } from '@/lib/supabase';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -56,6 +57,8 @@ function TodosPageContent() {
 
   // Phase 7: 検索ワード入力の状態管理
   const [searchInput, setSearchInput] = useState('');
+  // 検索実行時専用の部分ローディング状態
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
 
   // Phase 2: URLフィルター管理とConditionModal初期値状態
   const { getFiltersFromURL, currentFilters } = useURLFilters();
@@ -94,6 +97,7 @@ function TodosPageContent() {
   // Phase 4: useTodosカスタムフック（フィルターパラメータ付き）
   const { 
     todos, 
+    setTodos,
     isLoading: loading, 
     isFetchTodosLoading, // 🔴 新規: 部分ローディング
     error: todosError, 
@@ -103,7 +107,8 @@ function TodosPageContent() {
     updateTodo,
     isAddTodoLoading: _isAddTodoLoading,
     isUpdateTodoLoading: _isUpdateTodoLoading,
-    isDeleteTodoLoading: _isDeleteTodoLoading
+    isDeleteTodoLoading: _isDeleteTodoLoading,
+    isExecutingSearchRef // Step 5: 検索実行フラグ
   } = useTodos(user?.id || null, filterParams);
   
   // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
@@ -493,11 +498,113 @@ function TodosPageContent() {
   }, [currentSearchKeyword, getFiltersFromURL, getSortFromURL, router]);
 
   // Phase 7: 検索実行関数（Enter時・フォーカス離脱時に実行）
-  const executeSearch = useCallback(() => {
-    if (searchInput !== currentSearchKeyword) {
-      handleSearchUpdate(searchInput);
+  const executeSearch = useCallback(async (explicitKeyword?: string) => {
+    const targetKeyword = explicitKeyword !== undefined ? explicitKeyword : searchInput;
+    console.log('🔵 executeSearch開始:', { 
+      searchInput, 
+      currentSearchKeyword,
+      explicitKeyword,
+      targetKeyword,
+      condition: targetKeyword !== currentSearchKeyword 
+    });
+    
+    if (targetKeyword !== currentSearchKeyword) {
+      // 1. 部分ローディングで検索実行
+      try {
+        console.log('🔵 部分ローディング開始');
+        // Step 5: 検索実行開始フラグをON
+        console.log('🟡 フラグON設定:', { before: isExecutingSearchRef.current, refInstance: isExecutingSearchRef });
+        isExecutingSearchRef.current = true;
+        console.log('🟡 フラグON確認:', { after: isExecutingSearchRef.current, refInstance: isExecutingSearchRef });
+        setIsSearchLoading(true);
+        
+        // 現在のfilterParamsをベースに検索キーワードのみ更新
+        const searchFilterParams = {
+          priorityIds: activeFilters.priorityIds,
+          statusIds: activeFilters.statusIds,
+          sortOption: currentSort,
+          searchKeyword: targetKeyword.trim()
+        };
+        
+        // 部分ローディングでデータ取得（useTodosのfetchTodos相当の処理）
+        let query = supabase
+          .from('todos')
+          .select(`
+            *,
+            priority:todo_priorities(*),
+            status:todo_statuses(*)
+          `)
+          .eq('user_id', user?.id);
+        
+        // フィルター適用
+        if (searchFilterParams.priorityIds?.length) {
+          query = query.in('todo_priority_id', searchFilterParams.priorityIds);
+        }
+        if (searchFilterParams.statusIds?.length) {
+          query = query.in('todo_status_id', searchFilterParams.statusIds);
+        }
+        if (searchFilterParams.searchKeyword?.trim()) {
+          const keyword = searchFilterParams.searchKeyword.trim();
+          query = query.or(`todo_title.ilike.%${keyword}%,todo_text.ilike.%${keyword}%`);
+        }
+        
+        // ソート適用（デフォルト: created_desc）
+        const sortOption = searchFilterParams.sortOption || 'created_desc';
+        switch (sortOption) {
+          case 'created_desc':
+            query = query.order('created_at', { ascending: false });
+            break;
+          case 'created_asc':
+            query = query.order('created_at', { ascending: true });
+            break;
+          case 'updated_desc':
+            query = query.order('updated_at', { ascending: false });
+            break;
+          case 'updated_asc':
+            query = query.order('updated_at', { ascending: true });
+            break;
+          default:
+            query = query.order('updated_at', { ascending: false });
+        }
+        
+        const { data: todosData, error: todosError } = await query;
+        
+        if (todosError) {
+          throw todosError;
+        }
+        
+        // クライアント側ソート処理（必要に応じて）
+        const sortedData = todosData || [];
+        // 複雑なソート処理は現在省略（useTodosと同様の処理が必要な場合は追加）
+        
+        // データを直接更新（URL変更によるuseEffect実行を避ける）
+        setTodos(sortedData);
+        
+      } catch (error) {
+        console.error('検索実行エラー:', error);
+        showToast('検索に失敗しました', 'error');
+      } finally {
+        console.log('🔵 部分ローディング終了');
+        setIsSearchLoading(false);
+        // Step 5: 検索実行完了後、少し遅延してフラグをOFF（URL更新後のuseEffect実行を許可）
+        setTimeout(() => {
+          console.log('🟡 フラグOFF設定:', { before: isExecutingSearchRef.current });
+          isExecutingSearchRef.current = false;
+          console.log('🟡 フラグOFF確認:', { after: isExecutingSearchRef.current });
+        }, 100);
+      }
+    } else {
+      console.log('🔵 executeSearch条件不成立でスキップ');
     }
-  }, [searchInput, currentSearchKeyword, handleSearchUpdate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput, currentSearchKeyword, activeFilters, currentSort, user?.id, setTodos, showToast]);
+
+  // Step 2: URL更新専用関数（検索実行とは分離）
+  const updateSearchURL = useCallback((keyword: string) => {
+    if (keyword !== currentSearchKeyword) {
+      handleSearchUpdate(keyword);
+    }
+  }, [currentSearchKeyword, handleSearchUpdate]);
 
   const handleConditionModalOpen = () => {
     const urlFilters = getFiltersFromURL();
@@ -636,12 +743,16 @@ function TodosPageContent() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => {
+                  onKeyDown={async (e) => {
                     if (e.key === 'Enter') {
-                      executeSearch();
+                      await executeSearch();
+                      updateSearchURL(searchInput);
                     }
                   }}
-                  onBlur={executeSearch}
+                  onBlur={async () => {
+                    await executeSearch();
+                    updateSearchURL(searchInput);
+                  }}
                   placeholder="タイトルまたは本文"
                   className="w-full pl-10 pr-10 py-2 bg-white/50 border border-white/30 rounded-lg 
                            text-sm placeholder-gray-500 focus:outline-none focus:ring-2 
@@ -656,11 +767,25 @@ function TodosPageContent() {
                 {/* クリアボタン */}
                 {searchInput && (
                   <button
-                    onClick={() => {
+                    onClick={async () => {
+                      console.log('🔴 クリアボタン実行開始:', { 
+                        searchInput, 
+                        currentSearchKeyword 
+                      });
+                      
                       setSearchInput('');
-                      // クリア時は即座に検索実行（空文字での検索）
+                      
                       if (currentSearchKeyword) {
-                        handleSearchUpdate('');
+                        console.log('🔴 executeSearch実行直前:', { 
+                          searchInput, 
+                          currentSearchKeyword 
+                        });
+                        
+                        // Step 4: データクリア → URL更新の順次実行（Enter/Blurと同パターン）
+                        await executeSearch(''); // 明示的に空文字で検索実行
+                        updateSearchURL('');
+                        
+                        console.log('🔴 クリアボタン完了');
                       }
                     }}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-black/10 rounded-full transition-colors"
@@ -685,7 +810,7 @@ function TodosPageContent() {
             </div>
             
             {/* 検索実行時の部分ローディングオーバーレイ */}
-            <TodoListLoadingOverlay isVisible={isFetchTodosLoading} />
+            <TodoListLoadingOverlay isVisible={isFetchTodosLoading || isSearchLoading} />
             
             {todos.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">
