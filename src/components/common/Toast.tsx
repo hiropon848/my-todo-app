@@ -7,16 +7,16 @@ import ErrorToastIcon from '@/icons/toast-error.svg';
 interface ToastProps {
   message: string;
   type: 'success' | 'error';
-  isOpen: boolean;
+  isShow: boolean;
   onClose?: () => void;
 }
 
-export function Toast({ message, type, isOpen, onClose }: ToastProps) {
+export function Toast({ message, type, isShow, onClose }: ToastProps) {
   const [isToastFading, setIsToastFading] = useState(false);
   const [isToastVisible, setIsToastVisible] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isShow) {
       setIsToastFading(false);
       // フェードイン開始
       setIsToastVisible(true);
@@ -33,9 +33,9 @@ export function Toast({ message, type, isOpen, onClose }: ToastProps) {
     } else {
       setIsToastVisible(false);
     }
-  }, [isOpen, onClose]);
+  }, [isShow, onClose]);
 
-  if (!isOpen) return null;
+  if (!isShow) return null;
 
   // タイプ別のスタイル設定
   const styles = {

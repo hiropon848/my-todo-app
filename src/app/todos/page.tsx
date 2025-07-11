@@ -927,7 +927,7 @@ function TodosPageContent() {
         <Toast 
           message={toast.message} 
           type={toast.type} 
-          isOpen={toast.isOpen} 
+          isShow={toast.isShow} 
           onClose={hideToast}
         />
       )}

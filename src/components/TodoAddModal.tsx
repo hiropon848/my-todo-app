@@ -10,11 +10,10 @@ import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { TodoPriority } from '@/types/todoPriority';
 import { TodoStatus } from '@/types/todoStatus';
+import { CancelableModalProps } from '@/types/commonModal';
 
-interface TodoAddModalProps {
-  isOpen: boolean;
+interface TodoAddModalProps extends CancelableModalProps {
   onSave: (title: string, text: string, priorityId?: string | undefined, statusId?: string | undefined) => Promise<boolean>;
-  onCancel: () => void;
 }
 
 export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {

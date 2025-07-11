@@ -6,9 +6,9 @@ import UserIcon from '@/icons/user.svg';
 import LockIcon from '@/icons/lock.svg';
 import LogoutIcon from '@/icons/logout.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { CommonModalProps } from '@/types/commonModal';
 
-interface MenuModalProps {
-  isOpen: boolean;
+interface MenuModalProps extends CommonModalProps {
   onClose: () => void;
   onProfileClick: () => void;
   onPasswordChangeClick: () => void;

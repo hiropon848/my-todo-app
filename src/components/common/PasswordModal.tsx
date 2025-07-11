@@ -5,11 +5,10 @@ import CloseIcon from '@/icons/close.svg';
 import VisibilityOnIcon from '@/icons/visibility-on.svg';
 import VisibilityOffIcon from '@/icons/visibility-off.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { CancelableModalProps } from '@/types/commonModal';
 
-interface PasswordModalProps {
-  isOpen: boolean;
+interface PasswordModalProps extends CancelableModalProps {
   onSave: (currentPassword: string, newPassword: string) => Promise<boolean>;
-  onCancel: () => void;
 }
 
 export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) {

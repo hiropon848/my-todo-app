@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react';
 import CloseIcon from '@/icons/close.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { CancelableModalProps } from '@/types/commonModal';
 
-interface ProfileModalProps {
-  isOpen: boolean;
+interface ProfileModalProps extends CancelableModalProps {
   onSave: (lastName: string, firstName: string) => Promise<boolean>;
-  onCancel: () => void;
   initialProfile?: { lastName: string; firstName: string } | null;
 }
 

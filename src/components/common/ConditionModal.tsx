@@ -9,11 +9,10 @@ import { StatusBadge } from '@/components/common/StatusBadge';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { SortOption } from '@/types/todo';
 import CloseIcon from '@/icons/close.svg';
+import { CancelableModalProps } from '@/types/commonModal';
 
-interface ConditionModalProps {
-  isOpen: boolean;
+interface ConditionModalProps extends CancelableModalProps {
   onSave: (selectedPriorities: Set<string>, selectedStatuses: Set<string>, sortOption: SortOption) => Promise<boolean>;
-  onCancel: () => void;
   // Phase 2: 初期値props追加（デフォルト値でUI破壊防止）
   initialPriorities?: Set<string>;
   initialStatuses?: Set<string>;

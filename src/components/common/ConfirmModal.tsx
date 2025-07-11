@@ -3,15 +3,14 @@
 import { useState, useEffect } from 'react';
 import CloseIcon from '@/icons/close.svg';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { CancelableModalProps } from '@/types/commonModal';
 
-interface ConfirmModalProps {
-  isOpen: boolean;
+interface ConfirmModalProps extends CancelableModalProps {
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => Promise<void>;
-  onCancel: () => void;
   variant?: 'danger' | 'default';
 }
 
