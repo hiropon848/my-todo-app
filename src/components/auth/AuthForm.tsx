@@ -11,13 +11,13 @@ interface AuthFormProps {
 
 export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, signupError }) => {
   const [email, setEmail] = useState('');
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
+  const [isEmailTouched, setIsEmailTouched] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [emailError, setEmailError] = useState('');
 
   const [password, setPassword] = useState('');
-  const [passwordTouched, setPasswordTouched] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [isPasswordTouched, setIsPasswordTouched] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
   // ホバー状態管理
@@ -72,7 +72,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
     isPasswordHalfWidth(password) &&
     isPasswordLength(password);
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -116,11 +116,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
                     validateEmail(e.target.value, false);
                   }}
                   onFocus={() => {
-                    setEmailFocused(true);
+                    setIsEmailFocused(true);
                   }}
                   onBlur={() => {
-                    setEmailFocused(false);
-                    setEmailTouched(true);
+                    setIsEmailFocused(false);
+                    setIsEmailTouched(true);
                     validateEmail(email, true);
                   }}
                   onKeyUp={e => {
@@ -138,7 +138,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
                   placeholder="example@example.com"
                 />
                 {/* エラーメッセージ */}
-                {emailError && (emailTouched || (!emailFocused && email !== '')) && (
+                {emailError && (isEmailTouched || (!isEmailFocused && email !== '')) && (
                   <p className="text-xs text-red-600 font-semibold mt-2">{emailError}</p>
                 )}
               </div>
@@ -150,7 +150,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={isPasswordVisible ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={e => {
@@ -158,11 +158,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
                       validatePassword(e.target.value, false);
                     }}
                     onFocus={() => {
-                      setPasswordFocused(true);
+                      setIsPasswordFocused(true);
                     }}
                     onBlur={() => {
-                      setPasswordFocused(false);
-                      setPasswordTouched(true);
+                      setIsPasswordFocused(false);
+                      setIsPasswordTouched(true);
                       validatePassword(password, true);
                     }}
                     onKeyUp={e => {
@@ -181,11 +181,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
                   <button
                     type="button"
                     tabIndex={-1}
-                    aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                    onClick={() => setShowPassword(v => !v)}
+                    aria-label={isPasswordVisible ? 'パスワードを非表示' : 'パスワードを表示'}
+                    onClick={() => setIsPasswordVisible(v => !v)}
                     className="absolute inset-y-0 right-2 flex items-center px-1 text-text hover:text-primary focus:outline-none"
                   >
-                    {showPassword ? (
+                    {isPasswordVisible ? (
                       // 表示中：SVGコンポーネント
                       <VisibilityOnIcon className="w-6 h-6 relative top-[1px]" />
                     ) : (
@@ -194,7 +194,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit, loginError, 
                     )}
                   </button>
                 </div>
-                {passwordError && (passwordTouched || (!passwordFocused && password !== '')) && (
+                {passwordError && (isPasswordTouched || (!isPasswordFocused && password !== '')) && (
                   <p className="text-xs text-red-600 font-semibold mt-2">{passwordError}</p>
                 )}
               </div>
