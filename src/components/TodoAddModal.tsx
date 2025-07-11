@@ -24,10 +24,10 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   const [selectedStatusId, setSelectedStatusId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
-  const [titleTouched, setTitleTouched] = useState(false);
-  const [titleFocused, setTitleFocused] = useState(false);
+  const [isTitleTouched, setIsTitleTouched] = useState(false);
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [titleError, setTitleError] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Priority情報を取得
@@ -43,11 +43,11 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   useEffect(() => {
     if (isOpen) {
       // 少し遅らせてアニメーション開始
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
       // 閉じる時もアニメーション後に非表示
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
@@ -58,8 +58,8 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
       setText('');
       setError('');
       setTitleError('');
-      setTitleTouched(false);
-      setTitleFocused(false);
+      setIsTitleTouched(false);
+      setIsTitleFocused(false);
       setIsCancelling(false);
     }
   }, [isOpen]);
@@ -127,11 +127,11 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
     
     // キャンセル時は即座にバリデーション状態をクリア
     setTitleError('');
-    setTitleTouched(false);
-    setTitleFocused(false);
+    setIsTitleTouched(false);
+    setIsTitleFocused(false);
     
     // 閉じるアニメーションを開始
-    setShowModal(false);
+    setIsModalVisible(false);
     // アニメーション完了後にモーダルを閉じる
           setTimeout(() => {
         setTitle('');
@@ -140,8 +140,8 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
         setSelectedStatusId('');
         setError('');
         setTitleError('');
-        setTitleTouched(false);
-        setTitleFocused(false);
+        setIsTitleTouched(false);
+        setIsTitleFocused(false);
         setIsCancelling(false); // フラグをリセット
         onCancel();
       }, 300); // CSSのduration-300と同じ300ms
@@ -173,7 +173,7 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
       const success = await onSave(title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
       if (success) {
         // 成功時は閉じるアニメーションを実行
-        setShowModal(false);
+        setIsModalVisible(false);
         setTimeout(() => {
           // フォームリセット
           setTitle('');
@@ -182,8 +182,8 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
           setSelectedStatusId('');
           setError('');
           setTitleError('');
-          setTitleTouched(false);
-          setTitleFocused(false);
+          setIsTitleTouched(false);
+          setIsTitleFocused(false);
           setIsCancelling(false);
           onCancel();
         }, 300);
@@ -205,12 +205,12 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
   return (
     <div 
       className={`fixed inset-0 z-[70] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
@@ -223,7 +223,7 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
       {/* モーダルウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',
@@ -289,10 +289,10 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                     validateTitle((e.target as HTMLInputElement).value, false);
                   }
                 }}
-                onFocus={() => setTitleFocused(true)}
+                onFocus={() => setIsTitleFocused(true)}
                 onBlur={() => {
-                  setTitleFocused(false);
-                  setTitleTouched(true);
+                  setIsTitleFocused(false);
+                  setIsTitleTouched(true);
                   validateTitle(title, true);
                 }}
                 className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
@@ -300,7 +300,7 @@ export function TodoAddModal({ isOpen, onSave, onCancel }: TodoAddModalProps) {
                 disabled={isSaving}
                 autoFocus
               />
-              {titleError && (titleTouched || (!titleFocused && title === '')) && (
+              {titleError && (isTitleTouched || (!isTitleFocused && title === '')) && (
                 <p className="text-xs text-red-600 font-semibold mt-2">{titleError}</p>
               )}
             </div>

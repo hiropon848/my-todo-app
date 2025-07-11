@@ -44,7 +44,7 @@ export default function LoginPage() {
             lastName: profile.last_name || '',
             firstName: profile.first_name || '',
             displayName: `${profile.last_name} ${profile.first_name} さん`,
-            showCompleted: false // デフォルト値に設定（機能は後で削除予定）
+            isCompletedVisible: false // デフォルト値に設定（機能は後で削除予定）
           };
           login(userData);
         }

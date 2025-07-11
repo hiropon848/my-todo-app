@@ -8,7 +8,7 @@ interface User {
   lastName: string;
   firstName: string;
   displayName: string;
-  showCompleted: boolean;
+  isCompletedVisible: boolean;
 }
 
 interface AuthContextType {
@@ -87,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastName: '',
             firstName: '',
             displayName: 'ユーザー',
-            showCompleted: false
+            isCompletedVisible: false
           };
           setAuthState({ user: userData, status: 'authenticated' });
         } else if (profile) {
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastName: profile.last_name || '',
             firstName: profile.first_name || '',
             displayName: `${profile.last_name} ${profile.first_name} さん`,
-            showCompleted: false // デフォルト値に設定（機能は後で削除予定）
+            isCompletedVisible: false // デフォルト値に設定（機能は後で削除予定）
           };
           setAuthState({ user: userData, status: 'authenticated' });
         }

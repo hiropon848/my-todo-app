@@ -35,10 +35,10 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   const [selectedPriorityId, setSelectedPriorityId] = useState<string>('');
   const [selectedStatusId, setSelectedStatusId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
-  const [titleTouched, setTitleTouched] = useState(false);
-  const [titleFocused, setTitleFocused] = useState(false);
+  const [isTitleTouched, setIsTitleTouched] = useState(false);
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [titleError, setTitleError] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const { priorities, isLoading: prioritiesLoading, getDefaultPriorityId } = useTodoPriorities();
   const { todoStatuses, isLoading: todoStatusesLoading, getDefaultTodoStatusId } = useTodoStatuses();
@@ -47,10 +47,10 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
 
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
@@ -63,8 +63,8 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
       }
       
       setTitleError('');
-      setTitleTouched(false);
-      setTitleFocused(false);
+      setIsTitleTouched(false);
+      setIsTitleFocused(false);
     }
   }, [isOpen, todo]);
 
@@ -145,15 +145,15 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
     try {
       const success = await onSave(todo.id, title, text, selectedPriorityId || undefined, selectedStatusId || undefined);
       if (success) {
-        setShowModal(false);
+        setIsModalVisible(false);
         setTimeout(() => {
           setTitle('');
           setText('');
           setSelectedPriorityId('');
           setSelectedStatusId('');
           setTitleError('');
-          setTitleTouched(false);
-          setTitleFocused(false);
+          setIsTitleTouched(false);
+          setIsTitleFocused(false);
           onCancel();
         }, 300);
       }
@@ -163,15 +163,15 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   };
 
   const handleCancel = () => {
-    setShowModal(false);
+    setIsModalVisible(false);
     setTimeout(() => {
       setTitle('');
       setText('');
       setSelectedPriorityId('');
       setSelectedStatusId('');
       setTitleError('');
-      setTitleTouched(false);
-      setTitleFocused(false);
+      setIsTitleTouched(false);
+      setIsTitleFocused(false);
       onCancel();
     }, 300);
   };
@@ -187,18 +187,18 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
   return (
     <div 
       className={`fixed inset-0 z-[70] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onClick={handleBackgroundClick}
     >
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',
@@ -249,10 +249,10 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                     validateTitle((e.target as HTMLInputElement).value, false);
                   }
                 }}
-                onFocus={() => setTitleFocused(true)}
+                onFocus={() => setIsTitleFocused(true)}
                 onBlur={() => {
-                  setTitleFocused(false);
-                  setTitleTouched(true);
+                  setIsTitleFocused(false);
+                  setIsTitleTouched(true);
                   validateTitle(title, true);
                 }}
                 className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
@@ -260,7 +260,7 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                 disabled={isSaving}
                 autoFocus
               />
-              {titleError && (titleTouched || (!titleFocused && title === '')) && (
+              {titleError && (isTitleTouched || (!isTitleFocused && title === '')) && (
                 <p className="text-xs text-red-600 font-semibold mt-2">{titleError}</p>
               )}
             </div>

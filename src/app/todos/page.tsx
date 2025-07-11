@@ -36,7 +36,7 @@ function TodosPageContent() {
   
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [showTodoEditModal, setShowTodoEditModal] = useState(false);
+  const [isTodoEditModalOpen, setIsTodoEditModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<{
     id: string;
     todo_title: string;
@@ -49,11 +49,11 @@ function TodosPageContent() {
       color_code: string;
     };
   } | null>(null);
-  const [showTodoDeleteModal, setShowTodoDeleteModal] = useState(false);
+  const [isTodoDeleteModalOpen, setIsTodoDeleteModalOpen] = useState(false);
   const [deletingTodo, setDeletingTodo] = useState<{ id: string; todo_title: string } | null>(null);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showTodoAddModal, setShowTodoAddModal] = useState(false);
-  const [showConditionModal, setShowConditionModal] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isTodoAddModalOpen, setIsTodoAddModalOpen] = useState(false);
+  const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
 
   // Phase 7: 検索ワード入力の状態管理
   const [searchInput, setSearchInput] = useState('');
@@ -147,7 +147,7 @@ function TodosPageContent() {
     };
   }) => {
     setEditingTodo(todo);
-    setShowTodoEditModal(true);
+    setIsTodoEditModalOpen(true);
     setOpenMenuId(null);
   };
 
@@ -157,7 +157,7 @@ function TodosPageContent() {
     try {
       const success = await updateTodo(id, title, text, priorityId, statusId);
       if (success) {
-        setShowTodoEditModal(false);
+        setIsTodoEditModalOpen(false);
         // モーダルのアニメーション完了後にトースト表示
         setTimeout(() => {
           showToast('ToDoを更新しました', 'success');
@@ -174,14 +174,14 @@ function TodosPageContent() {
 
   // モーダルキャンセル処理
   const handleModalCancel = () => {
-    setShowTodoEditModal(false);
+    setIsTodoEditModalOpen(false);
     setEditingTodo(null);
   };
 
   // 削除開始（確認モーダルを開く）
   const startDelete = (todo: { id: string; todo_title: string }) => {
     setDeletingTodo(todo);
-    setShowTodoDeleteModal(true);
+    setIsTodoDeleteModalOpen(true);
     setOpenMenuId(null);
   };
 
@@ -191,7 +191,7 @@ function TodosPageContent() {
     
     try {
       await deleteTodo(deletingTodo.id);
-      setShowTodoDeleteModal(false);
+      setIsTodoDeleteModalOpen(false);
       // モーダルのアニメーション完了後にトースト表示
       setTimeout(() => {
         showToast('ToDoを削除しました', 'success');
@@ -203,13 +203,13 @@ function TodosPageContent() {
 
   // 削除キャンセル処理
   const handleDeleteCancel = () => {
-    setShowTodoDeleteModal(false);
+    setIsTodoDeleteModalOpen(false);
     setDeletingTodo(null);
   };
 
   // プロフィール編集開始
   const handleProfileClick = () => {
-    setShowProfileModal(true);
+    setIsProfileModalOpen(true);
   };
 
   // プロフィール保存処理
@@ -224,7 +224,7 @@ function TodosPageContent() {
       }
       
       // 先にモーダルを閉じる
-      setShowProfileModal(false);
+      setIsProfileModalOpen(false);
       
       // アニメーション完了後にAuthContext更新とトースト表示
       setTimeout(() => {
@@ -240,12 +240,12 @@ function TodosPageContent() {
 
   // プロフィールキャンセル処理
   const handleProfileCancel = () => {
-    setShowProfileModal(false);
+    setIsProfileModalOpen(false);
   };
 
   // 追加モーダル開始
   const handleAddClick = () => {
-    setShowTodoAddModal(true);
+    setIsTodoAddModalOpen(true);
   };
 
   // 追加モーダル保存処理
@@ -255,7 +255,7 @@ function TodosPageContent() {
       const success = await addTodo(title, text, priorityId, statusId);
       console.log('📊 addTodo result:', success);
       if (success) {
-        setShowTodoAddModal(false);
+        setIsTodoAddModalOpen(false);
         // モーダルのアニメーション完了後にトースト表示
         setTimeout(() => {
           console.log('✨ Showing success toast');
@@ -275,7 +275,7 @@ function TodosPageContent() {
 
   // 追加モーダルキャンセル処理
   const handleAddModalCancel = () => {
-    setShowTodoAddModal(false);
+    setIsTodoAddModalOpen(false);
   };
 
   // ログアウト処理（Contextのlogout関数を使用）
@@ -350,7 +350,7 @@ function TodosPageContent() {
     console.log('🔍 一括URL更新完了');
     // アクティブフィルター更新（IDベース）
     setActiveFilters({ priorityIds, statusIds });
-    setShowConditionModal(false);
+    setIsConditionModalOpen(false);
     return true;
   };
 
@@ -617,7 +617,7 @@ function TodosPageContent() {
       // Phase 8: ソート機能強化でソート状態も復元
       sortOption: currentSort
     });
-    setShowConditionModal(true);
+    setIsConditionModalOpen(true);
   };
 
   // ログアウト処理中の表示（最優先・他の条件を完全に無視）
@@ -880,7 +880,7 @@ function TodosPageContent() {
 
       {/* 追加モーダル */}
       <TodoAddModal
-        isOpen={showTodoAddModal}
+        isOpen={isTodoAddModalOpen}
         onSave={handleAddModalSave}
         onCancel={handleAddModalCancel}
       />
@@ -888,14 +888,14 @@ function TodosPageContent() {
       {/* 編集モーダル */}
       <TodoEditModal
         todo={editingTodo}
-        isOpen={showTodoEditModal}
+        isOpen={isTodoEditModalOpen}
         onSave={handleModalSave}
         onCancel={handleModalCancel}
       />
 
       {/* 削除確認モーダル */}
       <ConfirmModal
-        isOpen={showTodoDeleteModal}
+        isOpen={isTodoDeleteModalOpen}
         title="ToDoの削除"
         message={`「${deletingTodo?.todo_title}」を削除しますか？`}
         confirmText="削除"
@@ -906,7 +906,7 @@ function TodosPageContent() {
 
       {/* プロフィールモーダル */}
       <ProfileModal
-        isOpen={showProfileModal}
+        isOpen={isProfileModalOpen}
         onSave={handleProfileSave}
         onCancel={handleProfileCancel}
         initialProfile={user ? { lastName: user.lastName, firstName: user.firstName } : null}
@@ -914,9 +914,9 @@ function TodosPageContent() {
 
       {/* ConditionModal */}
       <ConditionModal
-        isOpen={showConditionModal}
+        isOpen={isConditionModalOpen}
         onSave={handleConditionSave}
-        onCancel={() => setShowConditionModal(false)}
+        onCancel={() => setIsConditionModalOpen(false)}
         initialPriorities={conditionModalInitialState.priorities}
         initialStatuses={conditionModalInitialState.statuses}
         initialSortOption={conditionModalInitialState.sortOption}

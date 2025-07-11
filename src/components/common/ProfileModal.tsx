@@ -13,17 +13,17 @@ interface ProfileModalProps {
 
 export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: ProfileModalProps) {
   const [lastName, setLastName] = useState('');
-  const [lastNameTouched, setLastNameTouched] = useState(false);
-  const [lastNameFocused, setLastNameFocused] = useState(false);
+  const [isLastNameTouched, setIsLastNameTouched] = useState(false);
+  const [isLastNameFocused, setIsLastNameFocused] = useState(false);
   const [lastNameError, setLastNameError] = useState('');
 
   const [firstName, setFirstName] = useState('');
-  const [firstNameTouched, setFirstNameTouched] = useState(false);
-  const [firstNameFocused, setFirstNameFocused] = useState(false);
+  const [isFirstNameTouched, setIsFirstNameTouched] = useState(false);
+  const [isFirstNameFocused, setIsFirstNameFocused] = useState(false);
   const [firstNameError, setFirstNameError] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -32,20 +32,20 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
   useEffect(() => {
     if (isOpen) {
       // 少し遅らせてアニメーション開始
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
   // 初期値設定（モーダルが閉じている時のみ実行）
   useEffect(() => {
-    if (isOpen && initialProfile && showModal === false) {
+    if (isOpen && initialProfile && isModalVisible === false) {
       setLastName(initialProfile.lastName);
       setFirstName(initialProfile.firstName);
     }
-  }, [isOpen, initialProfile, showModal]);
+  }, [isOpen, initialProfile, isModalVisible]);
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -83,10 +83,10 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
     setFirstName('');
     setLastNameError('');
     setFirstNameError('');
-    setLastNameTouched(false);
-    setLastNameFocused(false);
-    setFirstNameTouched(false);
-    setFirstNameFocused(false);
+    setIsLastNameTouched(false);
+    setIsLastNameFocused(false);
+    setIsFirstNameTouched(false);
+    setIsFirstNameFocused(false);
   };
 
   const handleSave = async () => {
@@ -103,7 +103,7 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
     try {
       const success = await onSave(lastName, firstName);
       if (success) {
-        setShowModal(false);
+        setIsModalVisible(false);
         setTimeout(() => {
           resetForm();
           onCancel();
@@ -117,7 +117,7 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
   };
 
   const handleCancel = () => {
-    setShowModal(false);
+    setIsModalVisible(false);
     setTimeout(() => {
       resetForm();
       onCancel();
@@ -136,19 +136,19 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
   return (
     <div 
       className={`fixed inset-0 z-[90] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onClick={handleBackgroundClick}
     >
       {/* モーダルウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',
@@ -179,11 +179,11 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
         {/* コンテンツ */}
         <div className="p-6">
           {/* エラーメッセージ */}
-          {lastNameError && (lastNameTouched || (!lastNameFocused && lastName === '')) && (
+          {lastNameError && (isLastNameTouched || (!isLastNameFocused && lastName === '')) && (
             <p className="text-xs text-red-600 font-semibold mt-2">{lastNameError}</p>
           )}
           
-          {firstNameError && (firstNameTouched || (!firstNameFocused && firstName === '')) && (
+          {firstNameError && (isFirstNameTouched || (!isFirstNameFocused && firstName === '')) && (
             <p className="text-xs text-red-600 font-semibold mt-2">{firstNameError}</p>
           )}
 
@@ -201,10 +201,10 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
                   setLastName(e.target.value);
                   if (lastNameError) validateLastName(e.target.value, false);
                 }}
-                onFocus={() => setLastNameFocused(true)}
+                onFocus={() => setIsLastNameFocused(true)}
                 onBlur={() => {
-                  setLastNameFocused(false);
-                  setLastNameTouched(true);
+                  setIsLastNameFocused(false);
+                  setIsLastNameTouched(true);
                   validateLastName(lastName, true);
                 }}
                 className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
@@ -226,10 +226,10 @@ export function ProfileModal({ isOpen, onSave, onCancel, initialProfile }: Profi
                   setFirstName(e.target.value);
                   if (firstNameError) validateFirstName(e.target.value, false);
                 }}
-                onFocus={() => setFirstNameFocused(true)}
+                onFocus={() => setIsFirstNameFocused(true)}
                 onBlur={() => {
-                  setFirstNameFocused(false);
-                  setFirstNameTouched(true);
+                  setIsFirstNameFocused(false);
+                  setIsFirstNameTouched(true);
                   validateFirstName(firstName, true);
                 }}
                 className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
