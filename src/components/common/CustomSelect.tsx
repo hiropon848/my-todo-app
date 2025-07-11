@@ -144,7 +144,7 @@ export function CustomSelect({
           id={id}
           onClick={handleToggle}
           disabled={disabled || loading}
-          className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-left appearance-none"
+          className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-left appearance-none"
         >
           <span className="block truncate">
             {loading ? '読み込み中...' : selectedOption ? (

@@ -660,7 +660,7 @@ function TodosPageContent() {
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
       {/* 背景グラデーションレイヤー */}
       <div
-        className="absolute inset-0 -z-10"
+        className="fixed inset-0 -z-10"
         style={{
           background:
             'linear-gradient(120deg, #a8edea 0%, #fed6e3 100%)',
@@ -693,9 +693,9 @@ function TodosPageContent() {
               <h3 className="text-sm font-semibold text-gray-700">検索条件</h3>
             </div>
             
-            <div className="px-4 py-2">
+            <div className="px-4 pt-2 pb-4">
               {/* フィルター条件表示とボタン */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 {/* 優先度・状態のフィルター有無のみで判定（検索キーワードは除外） */}
                 {(activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0) ? (
                   <div className="flex items-center gap-3">
@@ -759,8 +759,8 @@ function TodosPageContent() {
                   }}
                   placeholder="タイトルまたは本文"
                   className="w-full pl-10 pr-10 py-2 bg-white/50 border border-white/30 rounded-lg 
-                           text-sm placeholder-gray-500 focus:outline-none focus:ring-2 
-                           focus:ring-blue-500/30 focus:border-blue-500/50
+                           text-base placeholder-gray-400 focus:outline-none focus:ring-2 
+                           focus:ring-blue-500/80 focus:border-blue-500/50
                            backdrop-blur-sm transition-all duration-300"
                 />
                 <SearchIcon 

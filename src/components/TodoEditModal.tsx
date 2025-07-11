@@ -255,7 +255,7 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                   setTitleTouched(true);
                   validateTitle(title, true);
                 }}
-                className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
                 placeholder="タイトル"
                 disabled={isSaving}
                 autoFocus
@@ -327,7 +327,7 @@ export function TodoEditModal({ todo, isOpen, onSave, onCancel }: TodoEditModalP
                 id="modal-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
                 placeholder="本文（複数行入力可）"
                 rows={3}
                 disabled={isSaving}

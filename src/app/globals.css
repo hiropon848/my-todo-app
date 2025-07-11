@@ -15,9 +15,15 @@
   --error-color: #FF3B30;
 }
 
-body {
+html {
   background: url('/wallpaper.jpg') no-repeat center center fixed;
   background-size: cover;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+body {
+  background: none;
   color: var(--text-color);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }

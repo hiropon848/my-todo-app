@@ -178,7 +178,7 @@ export default function ResetPasswordPage() {
                     validateEmail((e.target as HTMLInputElement).value, false);
                   }
                 }}
-                className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
                 placeholder="example@example.com"
               />
               {/* エラーメッセージ */}
