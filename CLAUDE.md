@@ -200,7 +200,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### 命名規則
 - **フロントエンド変数・関数**: キャメルケース（`isLoading`, `todoItems`）
+- **boolean型変数**: `is` + キャメルケース形式で命名
+  - ✅ 正しい例：`isLoading`, `isShow`, `isVisible`
+  - ❌ 禁止例：`loading`, `show`, `visible` (isプレフィックスなし)
 - **データベース由来の型・プロパティ**: スネークケース許可（`todo_title`, `is_active`）
+  - PostgreSQL/Supabaseの標準的なカラム命名規則がスネークケースのため
+  - 自動生成される型定義との整合性を保持するため
 - **混在の理由**: データベーススキーマとの整合性のため
 - **新規API設計時**: 可能な限りキャメルケース採用を検討
 
