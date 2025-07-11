@@ -14,25 +14,25 @@ interface PasswordModalProps {
 
 export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) {
   const [currentPassword, setCurrentPassword] = useState('');
-  const [currentPasswordTouched, setCurrentPasswordTouched] = useState(false);
-  const [currentPasswordFocused, setCurrentPasswordFocused] = useState(false);
+  const [isCurrentPasswordTouched, setIsCurrentPasswordTouched] = useState(false);
+  const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] = useState(false);
   const [currentPasswordError, setCurrentPasswordError] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
-  const [newPasswordTouched, setNewPasswordTouched] = useState(false);
-  const [newPasswordFocused, setNewPasswordFocused] = useState(false);
+  const [isNewPasswordTouched, setIsNewPasswordTouched] = useState(false);
+  const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
   const [newPasswordError, setNewPasswordError] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
 
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
-  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  const [isConfirmPasswordTouched, setIsConfirmPasswordTouched] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -41,10 +41,10 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
   useEffect(() => {
     if (isOpen) {
       // 少し遅らせてアニメーション開始
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
@@ -164,7 +164,7 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
       const success = await onSave(currentPassword, newPassword);
       if (success) {
         // 保存成功時は閉じるアニメーションを実行
-        setShowModal(false);
+        setIsModalVisible(false);
         setTimeout(() => {
           resetForm();
           onCancel();
@@ -177,27 +177,27 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
 
   const resetForm = () => {
     setCurrentPassword('');
-    setCurrentPasswordTouched(false);
-    setCurrentPasswordFocused(false);
+    setIsCurrentPasswordTouched(false);
+    setIsCurrentPasswordFocused(false);
     setCurrentPasswordError('');
-    setShowCurrentPassword(false);
+    setIsCurrentPasswordVisible(false);
 
     setNewPassword('');
-    setNewPasswordTouched(false);
-    setNewPasswordFocused(false);
+    setIsNewPasswordTouched(false);
+    setIsNewPasswordFocused(false);
     setNewPasswordError('');
-    setShowNewPassword(false);
+    setIsNewPasswordVisible(false);
 
     setConfirmPassword('');
-    setConfirmPasswordTouched(false);
-    setConfirmPasswordFocused(false);
+    setIsConfirmPasswordTouched(false);
+    setIsConfirmPasswordFocused(false);
     setConfirmPasswordError('');
-    setShowConfirmPassword(false);
+    setIsConfirmPasswordVisible(false);
   };
 
   const handleCancel = () => {
     // 閉じるアニメーションを開始
-    setShowModal(false);
+    setIsModalVisible(false);
     // アニメーション完了後にモーダルを閉じる
     setTimeout(() => {
       resetForm();
@@ -217,19 +217,19 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
   return (
     <div 
       className={`fixed inset-0 z-[90] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onClick={handleBackgroundClick}
     >
       {/* モーダルウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',
@@ -269,16 +269,16 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
               <div className="relative">
                 <input
                   id="modal-currentPassword"
-                  type={showCurrentPassword ? 'text' : 'password'}
+                  type={isCurrentPasswordVisible ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => {
                     setCurrentPassword(e.target.value);
                     if (currentPasswordError) validateCurrentPassword(e.target.value, false);
                   }}
-                  onFocus={() => setCurrentPasswordFocused(true)}
+                  onFocus={() => setIsCurrentPasswordFocused(true)}
                   onBlur={() => {
-                    setCurrentPasswordFocused(false);
-                    setCurrentPasswordTouched(true);
+                    setIsCurrentPasswordFocused(false);
+                    setIsCurrentPasswordTouched(true);
                     validateCurrentPassword(currentPassword, true);
                   }}
                   onKeyUp={e => {
@@ -299,18 +299,18 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label={showCurrentPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                  onClick={() => setShowCurrentPassword(v => !v)}
+                  aria-label={isCurrentPasswordVisible ? 'パスワードを非表示' : 'パスワードを表示'}
+                  onClick={() => setIsCurrentPasswordVisible(v => !v)}
                   className="absolute inset-y-0 right-2 flex items-center px-1 text-text hover:text-primary focus:outline-none"
                 >
-                  {showCurrentPassword ? (
+                  {isCurrentPasswordVisible ? (
                     <VisibilityOnIcon className="w-6 h-6 relative top-[1px]" />
                   ) : (
                     <VisibilityOffIcon className="w-6 h-6" />
                   )}
                 </button>
               </div>
-              {currentPasswordError && (currentPasswordTouched || (!currentPasswordFocused && currentPassword === '')) && (
+              {currentPasswordError && (isCurrentPasswordTouched || (!isCurrentPasswordFocused && currentPassword === '')) && (
                 <p className="text-xs text-red-600 font-semibold mt-2">{currentPasswordError}</p>
               )}
             </div>
@@ -323,20 +323,20 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
               <div className="relative">
                 <input
                   id="modal-newPassword"
-                  type={showNewPassword ? 'text' : 'password'}
+                  type={isNewPasswordVisible ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => {
                     setNewPassword(e.target.value);
                     if (newPasswordError) validateNewPassword(e.target.value, false);
                     // 確認パスワードもリアルタイムで再検証
-                    if (confirmPassword && confirmPasswordTouched) {
+                    if (confirmPassword && isConfirmPasswordTouched) {
                       validateConfirmPassword(confirmPassword, false);
                     }
                   }}
-                  onFocus={() => setNewPasswordFocused(true)}
+                  onFocus={() => setIsNewPasswordFocused(true)}
                   onBlur={() => {
-                    setNewPasswordFocused(false);
-                    setNewPasswordTouched(true);
+                    setIsNewPasswordFocused(false);
+                    setIsNewPasswordTouched(true);
                     validateNewPassword(newPassword, true);
                   }}
                   onKeyUp={e => {
@@ -356,18 +356,18 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label={showNewPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                  onClick={() => setShowNewPassword(v => !v)}
+                  aria-label={isNewPasswordVisible ? 'パスワードを非表示' : 'パスワードを表示'}
+                  onClick={() => setIsNewPasswordVisible(v => !v)}
                   className="absolute inset-y-0 right-2 flex items-center px-1 text-text hover:text-primary focus:outline-none"
                 >
-                  {showNewPassword ? (
+                  {isNewPasswordVisible ? (
                     <VisibilityOnIcon className="w-6 h-6 relative top-[1px]" />
                   ) : (
                     <VisibilityOffIcon className="w-6 h-6" />
                   )}
                 </button>
               </div>
-              {newPasswordError && (newPasswordTouched || (!newPasswordFocused && newPassword === '')) && (
+              {newPasswordError && (isNewPasswordTouched || (!isNewPasswordFocused && newPassword === '')) && (
                 <p className="text-xs text-red-600 font-semibold mt-2">{newPasswordError}</p>
               )}
             </div>
@@ -380,16 +380,16 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
               <div className="relative">
                 <input
                   id="modal-confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={isConfirmPasswordVisible ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
                     if (confirmPasswordError) validateConfirmPassword(e.target.value, false);
                   }}
-                  onFocus={() => setConfirmPasswordFocused(true)}
+                  onFocus={() => setIsConfirmPasswordFocused(true)}
                   onBlur={() => {
-                    setConfirmPasswordFocused(false);
-                    setConfirmPasswordTouched(true);
+                    setIsConfirmPasswordFocused(false);
+                    setIsConfirmPasswordTouched(true);
                     validateConfirmPassword(confirmPassword, true);
                   }}
                   onKeyUp={e => {
@@ -409,18 +409,18 @@ export function PasswordModal({ isOpen, onSave, onCancel }: PasswordModalProps) 
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label={showConfirmPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                  onClick={() => setShowConfirmPassword(v => !v)}
+                  aria-label={isConfirmPasswordVisible ? 'パスワードを非表示' : 'パスワードを表示'}
+                  onClick={() => setIsConfirmPasswordVisible(v => !v)}
                   className="absolute inset-y-0 right-2 flex items-center px-1 text-text hover:text-primary focus:outline-none"
                 >
-                  {showConfirmPassword ? (
+                  {isConfirmPasswordVisible ? (
                     <VisibilityOnIcon className="w-6 h-6 relative top-[1px]" />
                   ) : (
                     <VisibilityOffIcon className="w-6 h-6" />
                   )}
                 </button>
               </div>
-              {confirmPasswordError && (confirmPasswordTouched || (!confirmPasswordFocused && confirmPassword === '')) && (
+              {confirmPasswordError && (isConfirmPasswordTouched || (!isConfirmPasswordFocused && confirmPassword === '')) && (
                 <p className="text-xs text-red-600 font-semibold mt-2">{confirmPasswordError}</p>
               )}
             </div>
