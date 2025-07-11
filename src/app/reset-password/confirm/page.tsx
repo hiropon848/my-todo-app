@@ -7,16 +7,16 @@ import VisibilityOffIcon from '@/icons/visibility-off.svg';
 
 export default function ResetPasswordConfirmPage() {
   const [newPassword, setNewPassword] = useState('');
-  const [newPasswordTouched, setNewPasswordTouched] = useState(false);
-  const [newPasswordFocused, setNewPasswordFocused] = useState(false);
+  const [isNewPasswordTouched, setIsNewPasswordTouched] = useState(false);
+  const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
   const [newPasswordError, setNewPasswordError] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
 
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
-  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  const [isConfirmPasswordTouched, setIsConfirmPasswordTouched] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -280,7 +280,7 @@ export default function ResetPasswordConfirmPage() {
                   <input
                     id="newPassword"
                     name="newPassword"
-                    type={showNewPassword ? 'text' : 'password'}
+                    type={isNewPasswordVisible ? 'text' : 'password'}
                     required
                     value={newPassword}
                     onChange={e => {
@@ -292,11 +292,11 @@ export default function ResetPasswordConfirmPage() {
                       }
                     }}
                     onFocus={() => {
-                      setNewPasswordFocused(true);
+                      setIsNewPasswordFocused(true);
                     }}
                     onBlur={() => {
-                      setNewPasswordFocused(false);
-                      setNewPasswordTouched(true);
+                      setIsNewPasswordFocused(false);
+                      setIsNewPasswordTouched(true);
                       validateNewPassword(newPassword, true);
                     }}
                     onKeyUp={e => {
@@ -315,19 +315,19 @@ export default function ResetPasswordConfirmPage() {
                   <button
                     type="button"
                     tabIndex={-1}
-                    aria-label={showNewPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                    onClick={() => setShowNewPassword(v => !v)}
+                    aria-label={isNewPasswordVisible ? 'パスワードを非表示' : 'パスワードを表示'}
+                    onClick={() => setIsNewPasswordVisible(v => !v)}
                     className="absolute inset-y-0 right-2 flex items-center px-1 text-text hover:text-primary focus:outline-none"
                     style={{ strokeWidth: '3' }}
                   >
-                    {showNewPassword ? (
+                    {isNewPasswordVisible ? (
                       <VisibilityOnIcon className="w-6 h-6 relative top-[1px]" />
                     ) : (
                       <VisibilityOffIcon className="w-6 h-6" />
                     )}
                   </button>
                 </div>
-                {newPasswordError && (newPasswordTouched || (!newPasswordFocused && newPassword !== '')) && (
+                {newPasswordError && (isNewPasswordTouched || (!isNewPasswordFocused && newPassword !== '')) && (
                   <p className="text-xs text-red-600 font-semibold mt-2">{newPasswordError}</p>
                 )}
               </div>
@@ -341,7 +341,7 @@ export default function ResetPasswordConfirmPage() {
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={isConfirmPasswordVisible ? 'text' : 'password'}
                     required
                     value={confirmPassword}
                     onChange={e => {
@@ -349,11 +349,11 @@ export default function ResetPasswordConfirmPage() {
                       validateConfirmPassword(e.target.value, false);
                     }}
                     onFocus={() => {
-                      setConfirmPasswordFocused(true);
+                      setIsConfirmPasswordFocused(true);
                     }}
                     onBlur={() => {
-                      setConfirmPasswordFocused(false);
-                      setConfirmPasswordTouched(true);
+                      setIsConfirmPasswordFocused(false);
+                      setIsConfirmPasswordTouched(true);
                       validateConfirmPassword(confirmPassword, true);
                     }}
                     onKeyUp={e => {
@@ -372,19 +372,19 @@ export default function ResetPasswordConfirmPage() {
                   <button
                     type="button"
                     tabIndex={-1}
-                    aria-label={showConfirmPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                    onClick={() => setShowConfirmPassword(v => !v)}
+                    aria-label={isConfirmPasswordVisible ? 'パスワードを非表示' : 'パスワードを表示'}
+                    onClick={() => setIsConfirmPasswordVisible(v => !v)}
                     className="absolute inset-y-0 right-2 flex items-center px-1 text-text hover:text-primary focus:outline-none"
                     style={{ strokeWidth: '3' }}
                   >
-                    {showConfirmPassword ? (
+                    {isConfirmPasswordVisible ? (
                       <VisibilityOnIcon className="w-6 h-6 relative top-[1px]" />
                     ) : (
                       <VisibilityOffIcon className="w-6 h-6" />
                     )}
                   </button>
                 </div>
-                {confirmPasswordError && (confirmPasswordTouched || (!confirmPasswordFocused && confirmPassword !== '')) && (
+                {confirmPasswordError && (isConfirmPasswordTouched || (!isConfirmPasswordFocused && confirmPassword !== '')) && (
                   <p className="text-xs text-red-600 font-semibold mt-2">{confirmPasswordError}</p>
                 )}
               </div>
