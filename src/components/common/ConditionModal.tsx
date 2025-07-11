@@ -32,7 +32,7 @@ export function ConditionModal({
   initialSortOption = 'created_desc'
 }: ConditionModalProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   // Phase 2: 初期値をpropsから設定（既存動作維持）
   const [selectedPriorities, setSelectedPriorities] = useState<Set<string>>(initialPriorities);
   const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(initialStatuses);
@@ -59,7 +59,7 @@ export function ConditionModal({
   useBodyScrollLock(isOpen);
 
   const handleCancel = useCallback(() => {
-    setShowModal(false);
+    setIsModalVisible(false);
     setTimeout(() => {
       onCancel();
     }, 300);
@@ -68,10 +68,10 @@ export function ConditionModal({
   // モーダルアニメーション制御
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
@@ -158,7 +158,7 @@ export function ConditionModal({
       // Phase 8: ソート機能強化で実装済み
       const success = await onSave(selectedPriorities, selectedStatuses, selectedSortOption);
       if (success) {
-        setShowModal(false);
+        setIsModalVisible(false);
         setTimeout(() => {
           onCancel();
         }, 300);
@@ -182,19 +182,19 @@ export function ConditionModal({
   return (
     <div 
       className={`fixed inset-0 z-[90] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onClick={handleBackgroundClick}
     >
       {/* モーダルウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',

@@ -6,13 +6,13 @@ interface ProfileFormProps {
 
 export const ProfileForm: React.FC<ProfileFormProps> = ({ onSubmit }) => {
   const [lastName, setLastName] = useState('');
-  const [lastNameTouched, setLastNameTouched] = useState(false);
-  const [lastNameFocused, setLastNameFocused] = useState(false);
+  const [isLastNameTouched, setIsLastNameTouched] = useState(false);
+  const [isLastNameFocused, setIsLastNameFocused] = useState(false);
   const [lastNameError, setLastNameError] = useState('');
 
   const [firstName, setFirstName] = useState('');
-  const [firstNameTouched, setFirstNameTouched] = useState(false);
-  const [firstNameFocused, setFirstNameFocused] = useState(false);
+  const [isFirstNameTouched, setIsFirstNameTouched] = useState(false);
+  const [isFirstNameFocused, setIsFirstNameFocused] = useState(false);
   const [firstNameError, setFirstNameError] = useState('');
 
   const [isHovered, setIsHovered] = useState(false);
@@ -74,16 +74,16 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onSubmit }) => {
                     setLastName(e.target.value);
                     if (lastNameError) validateLastName(e.target.value, false);
                   }}
-                  onFocus={() => setLastNameFocused(true)}
+                  onFocus={() => setIsLastNameFocused(true)}
                   onBlur={() => {
-                    setLastNameFocused(false);
-                    setLastNameTouched(true);
+                    setIsLastNameFocused(false);
+                    setIsLastNameTouched(true);
                     validateLastName(lastName, true);
                   }}
                   className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
                   placeholder="山田"
                 />
-                {lastNameError && (lastNameTouched || (!lastNameFocused && lastName === '')) && (
+                {lastNameError && (isLastNameTouched || (!isLastNameFocused && lastName === '')) && (
                   <p className="text-xs text-red-600 font-semibold mt-2">{lastNameError}</p>
                 )}
               </div>
@@ -101,16 +101,16 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onSubmit }) => {
                     setFirstName(e.target.value);
                     if (firstNameError) validateFirstName(e.target.value, false);
                   }}
-                  onFocus={() => setFirstNameFocused(true)}
+                  onFocus={() => setIsFirstNameFocused(true)}
                   onBlur={() => {
-                    setFirstNameFocused(false);
-                    setFirstNameTouched(true);
+                    setIsFirstNameFocused(false);
+                    setIsFirstNameTouched(true);
                     validateFirstName(firstName, true);
                   }}
                   className="mt-1 block w-full px-3 py-2 bg-white/50 border border-white/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all duration-200 text-base placeholder-gray-400"
                   placeholder="太郎"
                 />
-                {firstNameError && (firstNameTouched || (!firstNameFocused && firstName === '')) && (
+                {firstNameError && (isFirstNameTouched || (!isFirstNameFocused && firstName === '')) && (
                   <p className="text-xs text-red-600 font-semibold mt-2">{firstNameError}</p>
                 )}
               </div>

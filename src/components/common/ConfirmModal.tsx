@@ -27,7 +27,7 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -39,11 +39,11 @@ export function ConfirmModal({
       setIsLoading(false);
       
       // 少し遅らせてアニメーション開始
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
       // 閉じる時もアニメーション後に非表示
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
@@ -67,7 +67,7 @@ export function ConfirmModal({
     try {
       await onConfirm();
       // 成功時は閉じるアニメーションを実行
-      setShowModal(false);
+      setIsModalVisible(false);
       setTimeout(() => {
         onCancel();
       }, 300);
@@ -81,7 +81,7 @@ export function ConfirmModal({
   const handleCancel = () => {
     if (!isLoading) {
       // 閉じるアニメーションを開始
-      setShowModal(false);
+      setIsModalVisible(false);
       // アニメーション完了後にモーダルを閉じる
       setTimeout(() => {
         setError('');
@@ -107,19 +107,19 @@ export function ConfirmModal({
   return (
     <div 
       className={`fixed inset-0 z-[80] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onClick={handleBackgroundClick}
     >
       {/* モーダルウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',

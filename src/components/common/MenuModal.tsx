@@ -16,7 +16,7 @@ interface MenuModalProps {
 }
 
 export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeClick, onLogoutClick }: MenuModalProps) {
-  const [showModal, setShowModal] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // 背景スクロール制御
   useBodyScrollLock(isOpen);
@@ -25,17 +25,17 @@ export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeCli
   useEffect(() => {
     if (isOpen) {
       // 少し遅らせてアニメーション開始
-      const timer = setTimeout(() => setShowModal(true), 50);
+      const timer = setTimeout(() => setIsModalVisible(true), 50);
       return () => clearTimeout(timer);
     } else {
       // 閉じる時もアニメーション後に非表示
-      setShowModal(false);
+      setIsModalVisible(false);
     }
   }, [isOpen]);
 
   // モーダルを閉じる処理（アニメーション付き）
   const handleClose = useCallback(() => {
-    setShowModal(false);
+    setIsModalVisible(false);
     setTimeout(() => {
       onClose();
     }, 300);
@@ -67,19 +67,19 @@ export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeCli
   return (
     <div 
       className={`fixed inset-0 z-[100] flex items-center justify-center px-4 transition-all duration-300 ${
-        showModal ? 'opacity-100' : 'opacity-0'
+        isModalVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: showModal ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
-        backdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
-        WebkitBackdropFilter: showModal ? 'blur(4px)' : 'blur(0px)',
+        background: isModalVisible ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)',
+        backdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
+        WebkitBackdropFilter: isModalVisible ? 'blur(4px)' : 'blur(0px)',
       }}
       onClick={handleBackgroundClick}
     >
       {/* メニューウィンドウ */}
       <div 
         className={`rounded-2xl shadow-2xl border border-white/30 w-full max-w-sm mx-auto transition-all duration-300 ${
-          showModal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          isModalVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
         style={{
           background: 'rgba(255, 255, 255, 0.5)',
@@ -113,7 +113,7 @@ export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeCli
             <button
               onClick={() => {
                 // アニメーション付きで閉じる
-                setShowModal(false);
+                setIsModalVisible(false);
                 // アニメーション完了後（300ms + 50ms待機）にプロフィールを開く
                 setTimeout(() => {
                   onClose(); // メニューを完全に閉じる
@@ -137,7 +137,7 @@ export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeCli
             <button
               onClick={() => {
                 // アニメーション付きで閉じる（プロフィールと同じパターン）
-                setShowModal(false);
+                setIsModalVisible(false);
                 // アニメーション完了後（300ms + 50ms待機）にパスワード変更を開く
                 setTimeout(() => {
                   onClose(); // メニューを完全に閉じる
@@ -161,7 +161,7 @@ export function MenuModal({ isOpen, onClose, onProfileClick, onPasswordChangeCli
             <button
               onClick={() => {
                 // アニメーション付きで閉じる（プロフィールと同じパターン）
-                setShowModal(false);
+                setIsModalVisible(false);
                 // アニメーション完了後（300ms + 50ms待機）にログアウト確認を開く
                 setTimeout(() => {
                   onClose(); // メニューを完全に閉じる

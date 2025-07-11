@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
+  const [isEmailTouched, setIsEmailTouched] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [isHovered, setIsHovered] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -160,11 +160,11 @@ export default function ResetPasswordPage() {
                   validateEmail(e.target.value, false);
                 }}
                 onFocus={() => {
-                  setEmailFocused(true);
+                  setIsEmailFocused(true);
                 }}
                 onBlur={() => {
-                  setEmailFocused(false);
-                  setEmailTouched(true);
+                  setIsEmailFocused(false);
+                  setIsEmailTouched(true);
                   validateEmail(email, true);
                 }}
                 onKeyUp={e => {
@@ -182,7 +182,7 @@ export default function ResetPasswordPage() {
                 placeholder="example@example.com"
               />
               {/* エラーメッセージ */}
-              {emailError && (emailTouched || (!emailFocused && email !== '')) && (
+              {emailError && (isEmailTouched || (!isEmailFocused && email !== '')) && (
                 <p className="text-xs text-red-600 font-semibold mt-2">{emailError}</p>
               )}
             </div>
