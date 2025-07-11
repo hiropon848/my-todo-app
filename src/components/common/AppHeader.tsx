@@ -4,7 +4,6 @@ import AddIcon from '@/icons/add.svg';
 
 interface AppHeaderProps {
   userName: string;
-  onLogout: () => void;
   title: string;
   onMenuOpen: () => void;
   onAddClick?: () => void;
@@ -12,13 +11,10 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ 
   userName, 
-  onLogout: _onLogout, 
   title, 
   onMenuOpen,
   onAddClick
 }) => {
-  // onLogoutは使用しないが、HeaderWithMenuで必要なため型定義は維持
-  void _onLogout;
 
   return (
   <header className="bg-white/15 [backdrop-filter:blur(10px)] border-b border-white/30 rounded-t-2xl w-full">

@@ -12,10 +12,6 @@ export function useTodos(userId: string | null, filterParams?: {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isToggleLoading] = useState<string | null>(null);
-  const [isAddTodoLoading, setIsAddTodoLoading] = useState(false);
-  const [isUpdateTodoLoading, setIsUpdateTodoLoading] = useState(false);
-  const [isDeleteTodoLoading, setIsDeleteTodoLoading] = useState(false);
   const [isFetchTodosLoading, setIsFetchTodosLoading] = useState(false); // 🔴 新規追加
   const isExecutingSearchRef = useRef(false); // Step 5: 検索実行中フラグ
   
@@ -227,7 +223,6 @@ export function useTodos(userId: string | null, filterParams?: {
 
   // ToDo削除ロジック
   const deleteTodo = async (id: string) => {
-    setIsDeleteTodoLoading(true);
     try {
       const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
       if (deleteError) {
@@ -253,7 +248,7 @@ export function useTodos(userId: string | null, filterParams?: {
     } catch (error) {
       throw error;
     } finally {
-      setIsDeleteTodoLoading(false);
+      // ローディング状態は削除済み
     }
   };
 
@@ -313,7 +308,6 @@ export function useTodos(userId: string | null, filterParams?: {
         }
       }
       
-      setIsAddTodoLoading(true);
       if (process.env.NODE_ENV === 'development') {
         console.log('💾 Inserting todo...');
       }
@@ -368,7 +362,7 @@ export function useTodos(userId: string | null, filterParams?: {
       setError(errorMessage);
       return false;
     } finally {
-      setIsAddTodoLoading(false);
+      // ローディング状態は削除済み
     }
   };
 
@@ -381,7 +375,6 @@ export function useTodos(userId: string | null, filterParams?: {
     statusId?: string
   ) => {
     setError('');
-    setIsUpdateTodoLoading(true);
     try {
       const updateData: { todo_title: string; todo_text: string; todo_priority_id?: string; todo_status_id?: string } = {
         todo_title: title,
@@ -436,7 +429,7 @@ export function useTodos(userId: string | null, filterParams?: {
       setError(error instanceof Error ? error.message : '編集に失敗しました');
       return false;
     } finally {
-      setIsUpdateTodoLoading(false);
+      // ローディング状態は削除済み
     }
   };
 
@@ -447,11 +440,7 @@ export function useTodos(userId: string | null, filterParams?: {
     isFetchTodosLoading, // 🔴 新規: 部分ローディング
     error, 
     deleteTodo, 
-    isToggleLoading,
     addTodo,
-    isAddTodoLoading,
-    isUpdateTodoLoading,
-    isDeleteTodoLoading,
     updateTodo,
     isExecutingSearchRef, // Step 5: 検索実行フラグを外部に公開
     isSearchExecutedRef // 検索実行済みフラグを外部に公開

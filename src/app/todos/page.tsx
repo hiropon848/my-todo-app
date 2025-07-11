@@ -65,10 +65,7 @@ function TodosPageContent() {
   // Phase 8: ソート機能強化で追加
   const { getSortFromURL, currentSort } = useTodoSort();
   // Phase 7: 検索機能実装で追加
-  const { getSearchKeywordFromURL, currentSearchKeyword } = useSearchKeyword();
-  // Phase 8: 後続ステップで使用予定のため未使用変数警告を抑制
-  void getSortFromURL;
-  void getSearchKeywordFromURL;
+  const { currentSearchKeyword } = useSearchKeyword();
   const [conditionModalInitialState, setConditionModalInitialState] = useState({
     priorities: new Set<string>(),
     statuses: new Set<string>(),
@@ -102,21 +99,12 @@ function TodosPageContent() {
     isFetchTodosLoading, // 🔴 新規: 部分ローディング
     error: todosError, 
     deleteTodo, 
-    isToggleLoading: _isToggleLoading,
     addTodo,
     updateTodo,
-    isAddTodoLoading: _isAddTodoLoading,
-    isUpdateTodoLoading: _isUpdateTodoLoading,
-    isDeleteTodoLoading: _isDeleteTodoLoading,
     isExecutingSearchRef, // Step 5: 検索実行フラグ
     isSearchExecutedRef // 検索実行済みフラグ
   } = useTodos(user?.id || null, filterParams);
   
-  // 未使用変数の警告を抑制（メニューボタンで使用予定だが現在は無効化）
-  void _isToggleLoading;
-  void _isAddTodoLoading;
-  void _isUpdateTodoLoading;
-  void _isDeleteTodoLoading;
   const { toast, showToast, hideToast } = useToast();
 
   const { updateProfile } = useProfile();

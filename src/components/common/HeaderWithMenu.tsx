@@ -90,7 +90,6 @@ export function HeaderWithMenu({ title, user, onProfileClick, onLogoutClick, onA
       <AppHeader
         title={title}
         userName={userName}
-        onLogout={onLogoutClick || (() => {})}
         onMenuOpen={handleMenuOpen}
         onAddClick={onAddClick}
       />
