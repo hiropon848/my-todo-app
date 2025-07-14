@@ -142,13 +142,10 @@ export function ConditionModal({
   };
 
   // 条件をクリアするハンドラー
-  const handleClearAll = async () => {
+  const handleClearAll = () => {
     setSelectedPriorities(new Set());
     setSelectedStatuses(new Set());
     setSelectedSortOption('created_desc');
-    
-    // 検索キーワードを保持したままクリアを実行
-    await onSave(new Set(), new Set(), 'created_desc');
   };
 
   const handleSave = async () => {

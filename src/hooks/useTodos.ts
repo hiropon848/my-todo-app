@@ -13,12 +13,9 @@ export function useTodos(userId: string | null, filterParams?: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFetchTodosLoading, setIsFetchTodosLoading] = useState(false); // 🔴 新規追加
-  const isExecutingSearchRef = useRef(false); // Step 5: 検索実行中フラグ
   
   // 前回のfilterParamsを保持（検索キーワードのみの変更を検知するため）
   const prevFilterParamsRef = useRef<typeof filterParams>(filterParams);
-  // 検索実行済みフラグ（executeSearchによる実行後の重複を防ぐ）
-  const isSearchExecutedRef = useRef(false);
 
   // Priority情報を取得
   const { getDefaultPriorityId } = useTodoPriorities();
@@ -181,7 +178,7 @@ export function useTodos(userId: string | null, filterParams?: {
         setIsFetchTodosLoading(false);
       }
     }
-  }, [userId, filterParams, applySortToQuery]); // useCallbackの依存配列（Phase 8: ソート機能対応）
+  }, [userId, applySortToQuery, filterParams]); // filterParamsを依存に追加、配列参照問題はpage.tsxで解決済み
 
   useEffect(() => {
     // 検索キーワードのみが変更されたかを判定
@@ -200,13 +197,7 @@ export function useTodos(userId: string | null, filterParams?: {
       // 検索キーワードのみが変更された場合
       if (isPriorityIdsEqual && isStatusIdsEqual && isSortOptionEqual && isSearchKeywordChanged) {
         console.log('🔵 検索キーワードのみ変更を検知 → 部分ローディング');
-        // executeSearchで既に実行済みの場合はスキップ
-        if (isSearchExecutedRef.current) {
-          console.log('🔵 executeSearchで実行済みのためスキップ');
-          isSearchExecutedRef.current = false; // フラグをリセット
-        } else {
-          fetchTodos(false); // 部分ローディング
-        }
+        fetchTodos(false); // 部分ローディング
       } else {
         console.log('🔵 その他の変更を検知 → 全画面ローディング');
         fetchTodos(true); // 全画面ローディング
@@ -219,7 +210,7 @@ export function useTodos(userId: string | null, filterParams?: {
     
     // 現在のfilterParamsを保存
     prevFilterParamsRef.current = filterParams;
-  }, [fetchTodos, filterParams]); // fetchTodosが変化したときに実行
+  }, [fetchTodos, filterParams]);
 
   // ToDo削除ロジック
   const deleteTodo = async (id: string) => {
@@ -441,8 +432,6 @@ export function useTodos(userId: string | null, filterParams?: {
     error, 
     deleteTodo, 
     addTodo,
-    updateTodo,
-    isExecutingSearchRef, // Step 5: 検索実行フラグを外部に公開
-    isSearchExecutedRef // 検索実行済みフラグを外部に公開
+    updateTodo
   };
 }
