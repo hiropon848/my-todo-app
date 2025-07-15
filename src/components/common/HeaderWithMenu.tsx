@@ -5,27 +5,32 @@ import { AppHeader } from './AppHeader';
 import { MenuModal } from '@/components/common/MenuModal';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { PasswordModal } from '@/components/common/PasswordModal';
+import { ProfileModal } from '@/components/common/ProfileModal';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/useToast';
 
 interface HeaderWithMenuProps {
   title: string;
   user?: {
+    id: string;
     lastName: string;
     firstName: string;
   } | null;
-  onProfileClick?: () => void;
   onLogoutClick?: () => void;
   onAddClick?: () => void;
+  onUserUpdate?: (user: { lastName: string; firstName: string }) => void;
 }
 
-export function HeaderWithMenu({ title, user, onProfileClick, onLogoutClick, onAddClick }: HeaderWithMenuProps) {
+export function HeaderWithMenu({ title, user, onLogoutClick, onAddClick, onUserUpdate }: HeaderWithMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // カスタムフック
   const { changePassword } = usePasswordChange();
+  const { updateProfile } = useProfile();
   const { showToast } = useToast();
 
   const handleMenuOpen = () => {
@@ -37,8 +42,8 @@ export function HeaderWithMenu({ title, user, onProfileClick, onLogoutClick, onA
   };
 
   const handleProfileClick = () => {
-    // プロフィールを開く（メニューは MenuModal 内で制御）
-    onProfileClick?.();
+    // プロフィールモーダルを開く（パスワード変更と同じパターン）
+    setIsProfileModalOpen(true);
   };
 
   const handlePasswordChangeClick = () => {
@@ -66,6 +71,35 @@ export function HeaderWithMenu({ title, user, onProfileClick, onLogoutClick, onA
   // パスワード変更モーダルキャンセル処理
   const handlePasswordChangeCancel = () => {
     setIsPasswordModalOpen(false);
+  };
+
+  // プロフィール保存処理
+  const handleProfileSave = async (lastName: string, firstName: string) => {
+    if (!user) return false;
+    
+    try {
+      const success = await updateProfile(user.id, lastName, firstName);
+      if (!success) {
+        showToast('プロフィールの更新に失敗しました', 'error');
+        return false;
+      }
+      
+      // 先にモーダルを閉じて300ms後にユーザー更新とトースト表示
+      setIsProfileModalOpen(false);
+      setTimeout(() => {
+        onUserUpdate?.({ lastName, firstName });
+        showToast('プロフィールを更新しました', 'success');
+      }, 300);
+      return true;
+    } catch {
+      showToast('プロフィールの更新に失敗しました', 'error');
+      return false;
+    }
+  };
+
+  // プロフィールモーダルキャンセル処理
+  const handleProfileCancel = () => {
+    setIsProfileModalOpen(false);
   };
 
   // ログアウト確認を開く（プロフィールと同じパターン）
@@ -108,6 +142,14 @@ export function HeaderWithMenu({ title, user, onProfileClick, onLogoutClick, onA
         isOpen={isPasswordModalOpen}
         onSave={handlePasswordChange}
         onCancel={handlePasswordChangeCancel}
+      />
+
+      {/* プロフィールモーダル */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onSave={handleProfileSave}
+        onCancel={handleProfileCancel}
+        initialProfile={user ? { lastName: user.lastName, firstName: user.firstName } : null}
       />
 
       {/* ログアウト確認モーダル */}

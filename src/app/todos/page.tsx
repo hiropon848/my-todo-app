@@ -7,14 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { HeaderWithMenu } from '@/components/common/HeaderWithMenu';
 import { useTodos } from '@/hooks/useTodos';
-import { TodoEditModal } from '@/components/TodoEditModal';
-import { TodoAddModal } from '@/components/TodoAddModal';
-import { ConfirmModal } from '@/components/common/ConfirmModal';
-import { ProfileModal } from '@/components/common/ProfileModal';
-import { ConditionModal } from '@/components/common/ConditionModal';
-import { Toast } from '@/components/common/Toast';
 import { useToast } from '@/hooks/useToast';
-import { useProfile } from '@/hooks/useProfile';
 import { useURLFilters } from '@/hooks/useURLFilters';
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
 import { useTodoStatuses } from '@/hooks/useTodoStatuses';
@@ -23,6 +16,7 @@ import { useSearchKeyword } from '@/hooks/useSearchKeyword';
 import { SortOption } from '@/types/todo';
 import { TodoSearchBar } from '@/components/todos/TodoSearchBar';
 import { TodoList } from '@/components/todos/TodoList';
+import { TodoModals } from '@/components/todos/TodoModals';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -45,7 +39,6 @@ function TodosPageContent() {
   } | null>(null);
   const [isTodoDeleteModalOpen, setIsTodoDeleteModalOpen] = useState(false);
   const [deletingTodo, setDeletingTodo] = useState<{ id: string; todo_title: string } | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isTodoAddModalOpen, setIsTodoAddModalOpen] = useState(false);
   const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
 
@@ -101,7 +94,6 @@ function TodosPageContent() {
   
   const { toast, showToast, hideToast } = useToast();
 
-  const { updateProfile } = useProfile();
 
   // 認証チェック（AuthContextで管理されているが、未認証時のリダイレクト処理）
   useEffect(() => {
@@ -201,41 +193,6 @@ function TodosPageContent() {
     setDeletingTodo(null);
   };
 
-  // プロフィール編集開始
-  const handleProfileClick = () => {
-    setIsProfileModalOpen(true);
-  };
-
-  // プロフィール保存処理
-  const handleProfileSave = async (lastName: string, firstName: string) => {
-    if (!user) return false;
-    
-    try {
-      const success = await updateProfile(user.id, lastName, firstName);
-      if (!success) {
-        showToast('プロフィールの更新に失敗しました', 'error');
-        return false;
-      }
-      
-      // 先にモーダルを閉じる
-      setIsProfileModalOpen(false);
-      
-      // アニメーション完了後にAuthContext更新とトースト表示
-      setTimeout(() => {
-        updateUser({ lastName, firstName });
-        showToast('プロフィールを更新しました', 'success');
-      }, 300);
-      return true;
-    } catch {
-      showToast('プロフィールの更新に失敗しました', 'error');
-      return false;
-    }
-  };
-
-  // プロフィールキャンセル処理
-  const handleProfileCancel = () => {
-    setIsProfileModalOpen(false);
-  };
 
   // 追加モーダル開始
   const handleAddClick = () => {
@@ -550,10 +507,10 @@ function TodosPageContent() {
       <div className="rounded-2xl shadow-2xl bg-white/15 border border-white/30 w-full max-w-2xl mx-auto my-6">
         <HeaderWithMenu
           title="あなたのToDo"
-          user={user ? { lastName: user.lastName, firstName: user.firstName } : null}
-          onProfileClick={handleProfileClick}
+          user={user ? { id: user.id, lastName: user.lastName, firstName: user.firstName } : null}
           onLogoutClick={handleLogout}
           onAddClick={handleAddClick}
+          onUserUpdate={updateUser}
         />
         <main className="px-2 pt-6 pb-6">
           {/* エラーメッセージ */}
@@ -590,59 +547,26 @@ function TodosPageContent() {
         </main>
       </div>
 
-      {/* 追加モーダル */}
-      <TodoAddModal
-        isOpen={isTodoAddModalOpen}
-        onSave={handleAddModalSave}
-        onCancel={handleAddModalCancel}
+      {/* モーダル・トースト管理 */}
+      <TodoModals
+        isTodoAddModalOpen={isTodoAddModalOpen}
+        onAddModalSave={handleAddModalSave}
+        onAddModalCancel={handleAddModalCancel}
+        editingTodo={editingTodo}
+        isTodoEditModalOpen={isTodoEditModalOpen}
+        onEditModalSave={handleModalSave}
+        onEditModalCancel={handleModalCancel}
+        isTodoDeleteModalOpen={isTodoDeleteModalOpen}
+        deletingTodo={deletingTodo}
+        onDeleteConfirm={handleDeleteConfirm}
+        onDeleteCancel={handleDeleteCancel}
+        isConditionModalOpen={isConditionModalOpen}
+        conditionModalInitialState={conditionModalInitialState}
+        onConditionSave={handleConditionSave}
+        onConditionCancel={() => setIsConditionModalOpen(false)}
+        toast={toast}
+        onToastClose={hideToast}
       />
-
-      {/* 編集モーダル */}
-      <TodoEditModal
-        todo={editingTodo}
-        isOpen={isTodoEditModalOpen}
-        onSave={handleModalSave}
-        onCancel={handleModalCancel}
-      />
-
-      {/* 削除確認モーダル */}
-      <ConfirmModal
-        isOpen={isTodoDeleteModalOpen}
-        title="ToDoの削除"
-        message={`「${deletingTodo?.todo_title}」を削除しますか？`}
-        confirmText="削除"
-        variant="danger"
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-      />
-
-      {/* プロフィールモーダル */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onSave={handleProfileSave}
-        onCancel={handleProfileCancel}
-        initialProfile={user ? { lastName: user.lastName, firstName: user.firstName } : null}
-      />
-
-      {/* ConditionModal */}
-      <ConditionModal
-        isOpen={isConditionModalOpen}
-        onSave={handleConditionSave}
-        onCancel={() => setIsConditionModalOpen(false)}
-        initialPriorities={conditionModalInitialState.priorities}
-        initialStatuses={conditionModalInitialState.statuses}
-        initialSortOption={conditionModalInitialState.sortOption}
-      />
-
-      {/* トースト通知 */}
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          isShow={toast.isShow} 
-          onClose={hideToast}
-        />
-      )}
     </div>
   );
 }
