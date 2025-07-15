@@ -281,22 +281,32 @@ export function useFilteredTodos(userId: string | null, filterParams?: {
     priorityId?: string,
     statusId?: string
   ): Promise<Todo | null> => {
+    console.log('🟡 [useFilteredTodos] addTodo開始:', { userId, title, text, priorityId, statusId });
     try {
+      console.log('🟡 [useFilteredTodos] databaseAddTodo呼び出し開始');
       const newTodo = await databaseAddTodo(userId, title, text, priorityId, statusId);
-      if (!newTodo) return null;
+      console.log('🟡 [useFilteredTodos] databaseAddTodo結果:', newTodo);
+      if (!newTodo) {
+        console.log('🔴 [useFilteredTodos] newTodoがnull、null返却');
+        return null;
+      }
       
       // フィルターまたはソートが適用されている場合は完全なデータ再取得
       // 新しく作成されたToDoがフィルター条件に合うかどうか、ソート順序に影響するかを正確に判定
       if (hasActiveFilters()) {
+        console.log('🟡 [useFilteredTodos] フィルター適用中、refetchTodos実行');
         // フィルター適用時: 全体ローディングで再取得
         refetchTodos(); // showMainLoading = true (デフォルト)
       } else {
+        console.log('🟡 [useFilteredTodos] フィルターなし、個別追加');
         // フィルターなし時: 既存の個別追加ロジックを維持（パフォーマンス重視）
         updateTodosList(prev => [newTodo, ...prev]);
       }
       
+      console.log('🟡 [useFilteredTodos] addTodo成功、newTodo返却');
       return newTodo;
     } catch (error) {
+      console.log('🔴 [useFilteredTodos] addTodo例外:', error);
       throw error;
     }
   }, [databaseAddTodo, hasActiveFilters, refetchTodos, updateTodosList]);

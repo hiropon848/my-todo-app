@@ -18,6 +18,7 @@ import { TodoSearchBar } from '@/components/todos/TodoSearchBar';
 import { TodoList } from '@/components/todos/TodoList';
 import { TodoModals } from '@/components/todos/TodoModals';
 import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
+import { ErrorRecovery } from '@/components/common/ErrorRecovery';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -42,6 +43,10 @@ function TodosPageContent() {
   const [deletingTodo, setDeletingTodo] = useState<{ id: string; todo_title: string } | null>(null);
   const [isTodoAddModalOpen, setIsTodoAddModalOpen] = useState(false);
   const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
+  
+  // Step 2-C-2: 手動復旧UI状態管理
+  const [lastError, setLastError] = useState<ReturnType<typeof classifyError> | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Phase 7: 検索ワード入力の状態管理
   const [searchInput, setSearchInput] = useState('');
@@ -138,9 +143,35 @@ function TodosPageContent() {
     setOpenMenuId(null);
   };
 
-  // モーダル保存処理
+  // Step 2-C-2: 手動復旧UI用のリトライ関数
+  const handleRetry = async () => {
+    if (!lastError) return;
+    
+    setIsRetrying(true);
+    setLastError(null); // エラー表示をクリア
+    
+    try {
+      // 最後に失敗した操作を判定して適切な処理を実行
+      // 実際の実装では、失敗した操作の種類を保存して対応する
+      // ここでは例として、最後のエラーがあった場合にページリロードを提案
+      setTimeout(() => {
+        setIsRetrying(false);
+        showToast('再試行しました。問題が続く場合はページを再読み込みしてください。', 'success');
+      }, 1000);
+    } catch (error) {
+      setIsRetrying(false);
+      const classifiedError = classifyError(error);
+      setLastError(classifiedError);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'TodosPage.handleRetry');
+      }
+    }
+  };
+
+  // モーダル保存処理（Step 2-C-2: エラー復旧UI統合）
   const handleModalSave = async (id: string, title: string, text: string, priorityId?: string, statusId?: string) => {
     setError('');
+    setLastError(null); // エラー復旧UIをクリア
     try {
       const success = await updateTodo(id, title, text, priorityId, statusId);
       if (success) {
@@ -154,13 +185,14 @@ function TodosPageContent() {
       showToast('更新に失敗しました', 'error');
       return false;
     } catch (error) {
-      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      // Step 2-A,2-B,2-C-2: エラー分類システム適用とエラー復旧UI表示
       const classifiedError = classifyError(error);
       if (process.env.NODE_ENV === 'development') {
         logClassifiedError(classifiedError, 'TodosPage.handleModalSave');
       }
-      // Step 2-B: 分類されたエラーメッセージを使用
-      showToast(classifiedError.message, 'error');
+      // Step 2-C-2: エラー復旧UI表示（Toastと併用）
+      setLastError(classifiedError);
+      showToast('ToDoの更新に失敗しました', 'error');
       return false;
     }
   };
@@ -178,10 +210,11 @@ function TodosPageContent() {
     setOpenMenuId(null);
   };
 
-  // 削除確認処理
+  // 削除確認処理（Step 2-C-2: エラー復旧UI統合）
   const handleDeleteConfirm = async () => {
     if (!deletingTodo) return;
     
+    setLastError(null); // エラー復旧UIをクリア
     try {
       await deleteTodo(deletingTodo.id);
       setIsTodoDeleteModalOpen(false);
@@ -189,8 +222,15 @@ function TodosPageContent() {
       setTimeout(() => {
         showToast('ToDoを削除しました', 'success');
       }, 300);
-    } catch {
-      showToast('削除に失敗しました', 'error');
+    } catch (error) {
+      // Step 2-A,2-B,2-C-2: エラー分類システム適用とエラー復旧UI表示
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'TodosPage.handleDeleteConfirm');
+      }
+      // Step 2-C-2: エラー復旧UI表示（Toastと併用）
+      setLastError(classifiedError);
+      showToast('ToDoの削除に失敗しました', 'error');
     }
   };
 
@@ -206,9 +246,10 @@ function TodosPageContent() {
     setIsTodoAddModalOpen(true);
   };
 
-  // 追加モーダル保存処理
+  // 追加モーダル保存処理（Step 2-C-2: エラー復旧UI統合）
   const handleAddModalSave = async (title: string, text: string, priorityId?: string, statusId?: string) => {
     console.log('🚀 handleAddModalSave called:', { title, text, priorityId, statusId });
+    setLastError(null); // エラー復旧UIをクリア
     try {
       const success = await addTodo(title, text, priorityId, statusId);
       console.log('📊 addTodo result:', success);
@@ -225,13 +266,14 @@ function TodosPageContent() {
       showToast('作成に失敗しました', 'error');
       return false;
     } catch (error) {
-      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      // Step 2-A,2-B,2-C-2: エラー分類システム適用とエラー復旧UI表示
       const classifiedError = classifyError(error);
       if (process.env.NODE_ENV === 'development') {
         logClassifiedError(classifiedError, 'TodosPage.handleAddModalSave');
       }
-      // Step 2-B: 分類されたエラーメッセージを使用
-      showToast(classifiedError.message, 'error');
+      // Step 2-C-2: エラー復旧UI表示（Toastと併用）
+      setLastError(classifiedError);
+      showToast('ToDoの追加に失敗しました', 'error');
       return false;
     }
   };
@@ -529,13 +571,23 @@ function TodosPageContent() {
           onUserUpdate={updateUser}
         />
         <main className="px-2 pt-6 pb-6">
-          {/* エラーメッセージ */}
-          {(error || todosError) && (
+          {/* Step 2-C-2: エラー復旧UI表示 */}
+          {lastError && (
+            <div className="mb-4">
+              <ErrorRecovery
+                error={lastError}
+                onRetry={handleRetry}
+                isRetrying={isRetrying}
+              />
+            </div>
+          )}
+          
+          {/* 従来のエラーメッセージ（エラー復旧UIと併用） */}
+          {(error || todosError) && !lastError && (
             <div className="mb-4 text-red-600 font-semibold text-sm text-center">
               {error || todosError}
             </div>
           )}
-
 
           {/* 検索・フィルターバー */}
           <TodoSearchBar

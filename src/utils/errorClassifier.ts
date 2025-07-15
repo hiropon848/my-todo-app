@@ -164,8 +164,11 @@ export const classifyGeneralError = (error: unknown): ClassifiedError => {
  * プロジェクト全体でこの関数を使用してエラーを分類
  */
 export const classifyError = (error: unknown): ClassifiedError => {
+  console.log('🔶 [errorClassifier] classifyError開始:', error);
+  
   // null/undefined チェック
   if (!error) {
+    console.log('🔶 [errorClassifier] null/undefinedエラー');
     return {
       type: 'UNKNOWN_ERROR',
       originalError: error,
@@ -175,11 +178,17 @@ export const classifyError = (error: unknown): ClassifiedError => {
   
   // Supabaseエラーかどうかを優先的にチェック
   if (error && typeof error === 'object' && 'code' in error) {
-    return classifySupabaseError(error);
+    console.log('🔶 [errorClassifier] Supabaseエラーとして処理');
+    const result = classifySupabaseError(error);
+    console.log('🔶 [errorClassifier] Supabaseエラー分類結果:', result);
+    return result;
   }
   
+  console.log('🔶 [errorClassifier] 一般エラーとして処理');
   // 一般的なエラーとして分類
-  return classifyGeneralError(error);
+  const result = classifyGeneralError(error);
+  console.log('🔶 [errorClassifier] 一般エラー分類結果:', result);
+  return result;
 };
 
 /**

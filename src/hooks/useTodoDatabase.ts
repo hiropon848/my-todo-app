@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
-import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
+import { useAutoRetry } from './useAutoRetry';
 
 /**
  * ToDoデータベース操作を管理するフック
@@ -11,8 +11,9 @@ import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
 export function useTodoDatabase() {
   const [error, setError] = useState('');
   const { getDefaultPriorityId } = useTodoPriorities();
+  const { retryTodoOperation } = useAutoRetry();
 
-  // ToDo追加ロジック
+  // ToDo追加ロジック（Step 2-C-1: 自動リトライ機能適用）
   const addTodo = useCallback(async (
     userId: string,
     title: string, 
@@ -32,46 +33,49 @@ export function useTodoDatabase() {
       return null;
     }
     
-    try {
-      const finalPriorityId = priorityId || getDefaultPriorityId();
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🎯 Priority ID:', finalPriorityId);
-      }
+    // Step 2-C-1: 自動リトライ機能適用 - addTodo操作をリトライ対応
+    return await retryTodoOperation(async () => {
+      console.log('🟠 [useTodoDatabase] retryTodoOperation内部関数開始');
+      console.log('🟠 [useTodoDatabase] getDefaultPriorityId呼び出し');
+      const defaultPriorityId = getDefaultPriorityId();
+      console.log('🟠 [useTodoDatabase] getDefaultPriorityId結果:', defaultPriorityId);
+      const finalPriorityId = priorityId || defaultPriorityId;
+      console.log('🟠 [useTodoDatabase] 最終priorityId:', finalPriorityId);
+      
       if (!finalPriorityId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('❌ Failed to get priority ID');
-        }
+        console.log('🔴 [useTodoDatabase] priorityID取得失敗');
         setError('優先度データの取得に失敗しました');
         return null;
       }
       
       let finalStatusId = statusId;
+      console.log('🟠 [useTodoDatabase] statusId確認:', statusId);
       if (!finalStatusId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 Fetching default status...');
-        }
+        console.log('🟠 [useTodoDatabase] デフォルトstatus取得開始');
         const { data: defaultStatus, error: statusError } = await supabase
           .from('todo_statuses')
           .select('id')
           .eq('name', '未着手')
           .single();
+        console.log('🟠 [useTodoDatabase] デフォルトstatus結果:', { defaultStatus, statusError });
 
         if (statusError || !defaultStatus) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('❌ Failed to get default status:', statusError);
-          }
+          console.log('🔴 [useTodoDatabase] デフォルトstatus取得失敗');
           setError('デフォルト状態の取得に失敗しました');
           return null;
         }
         finalStatusId = defaultStatus.id;
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Default status ID:', finalStatusId);
-        }
+        console.log('🟠 [useTodoDatabase] 最終statusId:', finalStatusId);
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 Inserting todo...');
-      }
+      console.log('🟠 [useTodoDatabase] Supabase insert開始');
+      console.log('🟠 [useTodoDatabase] insert対象データ:', {
+        user_id: userId,
+        todo_title: title,
+        todo_text: text,
+        todo_status_id: finalStatusId,
+        todo_priority_id: finalPriorityId,
+      });
       
       const { data: inserted, error: insertError } = await supabase.from('todos').insert({
         user_id: userId,
@@ -85,32 +89,22 @@ export function useTodoDatabase() {
         status:todo_statuses(*)
       `).single();
       
+      console.log('🟠 [useTodoDatabase] Supabase insert結果:', { inserted, insertError });
+      
       if (insertError || !inserted) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('❌ Insert failed:', insertError);
+        console.log('🔴 [useTodoDatabase] insert失敗、例外投げ:', insertError);
+        if (insertError) {
+          throw insertError;
         }
-        setError('ToDoの追加に失敗しました');
-        return null;
+        throw new Error('ToDoの追加に失敗しました');
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Todo inserted successfully:', inserted);
-      }
-      
+      console.log('🟠 [useTodoDatabase] insert成功、Todo返却');
       return inserted;
-    } catch (error) {
-      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
-      const classifiedError = classifyError(error);
-      if (process.env.NODE_ENV === 'development') {
-        logClassifiedError(classifiedError, 'useTodoDatabase.addTodo');
-      }
-      // Step 2-B: 分類されたエラーメッセージを使用
-      setError(classifiedError.message);
-      return null;
-    }
-  }, [getDefaultPriorityId]);
+    }, 'useTodoDatabase.addTodo');
+  }, [getDefaultPriorityId, retryTodoOperation]);
 
-  // ToDo更新ロジック
+  // ToDo更新ロジック（Step 2-C-1: 自動リトライ機能適用）
   const updateTodo = useCallback(async (
     id: string,
     title: string,
@@ -119,7 +113,9 @@ export function useTodoDatabase() {
     statusId?: string
   ): Promise<Todo | null> => {
     setError('');
-    try {
+    
+    // Step 2-C-1: 自動リトライ機能適用 - updateTodo操作をリトライ対応
+    return await retryTodoOperation(async () => {
       const updateData: { todo_title: string; todo_text: string; todo_priority_id?: string; todo_status_id?: string } = {
         todo_title: title,
         todo_text: text,
@@ -151,37 +147,22 @@ export function useTodoDatabase() {
       }
       
       return updatedTodo;
-    } catch (error) {
-      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
-      const classifiedError = classifyError(error);
-      if (process.env.NODE_ENV === 'development') {
-        logClassifiedError(classifiedError, 'useTodoDatabase.updateTodo');
-      }
-      // Step 2-B: 分類されたエラーメッセージを使用
-      setError(classifiedError.message);
-      return null;
-    }
-  }, []);
+    }, 'useTodoDatabase.updateTodo');
+  }, [retryTodoOperation]);
 
-  // ToDo削除ロジック
+  // ToDo削除ロジック（Step 2-C-1: 自動リトライ機能適用）
   const deleteTodo = useCallback(async (id: string): Promise<boolean> => {
-    try {
+    // Step 2-C-1: 自動リトライ機能適用 - deleteTodo操作をリトライ対応
+    const result = await retryTodoOperation(async () => {
       const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
       if (deleteError) {
         throw deleteError;
       }
       return true;
-    } catch (error) {
-      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
-      const classifiedError = classifyError(error);
-      if (process.env.NODE_ENV === 'development') {
-        logClassifiedError(classifiedError, 'useTodoDatabase.deleteTodo');
-      }
-      // Step 2-B: 分類されたエラーメッセージを使用
-      setError(classifiedError.message);
-      return false;
-    }
-  }, []);
+    }, 'useTodoDatabase.deleteTodo');
+    
+    return result !== null ? result : false;
+  }, [retryTodoOperation]);
 
   return {
     error,
