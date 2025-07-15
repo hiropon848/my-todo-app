@@ -1,10 +1,10 @@
 import React from 'react';
 
-interface TodoListLoadingOverlayProps {
+interface LoadingOverlayProps {
   isVisible: boolean;
 }
 
-export const TodoListLoadingOverlay: React.FC<TodoListLoadingOverlayProps> = ({ isVisible }) => {
+export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible }) => {
   if (!isVisible) return null;
 
   return (

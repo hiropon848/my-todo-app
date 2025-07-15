@@ -14,12 +14,6 @@ import { ProfileModal } from '@/components/common/ProfileModal';
 import { ConditionModal } from '@/components/common/ConditionModal';
 import { Toast } from '@/components/common/Toast';
 import { useToast } from '@/hooks/useToast';
-import SubMenuIcon from '@/icons/menu-sub.svg';
-import SortAndFilterIcon from '@/icons/sort-and-filter.svg';
-import SearchIcon from '@/icons/search.svg';
-import CloseIcon from '@/icons/close.svg';
-import { PriorityBadge } from '@/components/common/PriorityBadge';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { useProfile } from '@/hooks/useProfile';
 import { useURLFilters } from '@/hooks/useURLFilters';
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
@@ -27,7 +21,8 @@ import { useTodoStatuses } from '@/hooks/useTodoStatuses';
 import { useTodoSort } from '@/hooks/useTodoSort';
 import { useSearchKeyword } from '@/hooks/useSearchKeyword';
 import { SortOption } from '@/types/todo';
-import { TodoListLoadingOverlay } from '@/components/common/TodoListLoadingOverlay';
+import { TodoSearchBar } from '@/components/todos/TodoSearchBar';
+import { TodoList } from '@/components/todos/TodoList';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -569,188 +564,29 @@ function TodosPageContent() {
           )}
 
 
-          {/* フィルターボタン */}
-          <div className="flex flex-col mb-6 bg-white/30 rounded-xl border border-white/20 shadow">
-            {/* 検索条件ヘッダー */}
-            <div className="px-4 py-2 border-b border-white/30">
-              <h3 className="text-sm font-semibold text-gray-700">検索条件</h3>
-            </div>
-            
-            <div className="px-4 pt-2 pb-4">
-              {/* フィルター条件表示とボタン */}
-              <div className="flex items-center justify-between mb-2">
-                {/* 優先度・状態のフィルター有無のみで判定（検索キーワードは除外） */}
-                {(activeFilters.priorityIds.length > 0 || activeFilters.statusIds.length > 0) ? (
-                  <div className="flex items-center gap-3">
-                    {/* 優先度バッジ */}
-                    {activeFilters.priorityIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-600">[優先度]</span>
-                        {activeFilters.priorityIds.map(id => {
-                          const priority = priorities?.find(p => p.id === id);
-                          return priority ? (
-                            <PriorityBadge key={priority.id} priority={priority} size="sm" />
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                    {/* ステータスバッジ */}
-                    {activeFilters.statusIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-600">[状態]</span>
-                        {activeFilters.statusIds.map(id => {
-                          const status = todoStatuses?.find(s => s.id === id);
-                          return status ? (
-                            <StatusBadge key={status.id} status={status} size="sm" />
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-500">絞り込み/並び替え なし</span>
-                )}
-                
-                {/* フィルター/ソートボタン */}
-                <button
-                  onClick={handleConditionModalOpen}
-                  className="p-3 rounded-full hover:bg-black/10 transition-colors"
-                >
-                  <SortAndFilterIcon 
-                    width="22" 
-                    height="22" 
-                    className="text-[#374151]"
-                  />
-                </button>
-              </div>
-              
-              {/* 検索フィールド */}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      updateSearchURL(searchInput);
-                    }
-                  }}
-                  onBlur={() => {
-                    updateSearchURL(searchInput);
-                  }}
-                  placeholder="タイトルまたは本文"
-                  className="w-full pl-10 pr-10 py-2 bg-white/50 border border-white/30 rounded-lg 
-                           text-base placeholder-gray-400 focus:outline-none focus:ring-2 
-                           focus:ring-blue-500/80 focus:border-blue-500/50
-                           backdrop-blur-sm transition-all duration-300"
-                />
-                <SearchIcon 
-                  width="20" 
-                  height="20" 
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-                {/* クリアボタン */}
-                {searchInput && (
-                  <button
-                    onClick={() => {
-                      setSearchInput('');
-                      updateSearchURL('');
-                    }}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-black/10 rounded-full transition-colors"
-                    aria-label="検索をクリア"
-                  >
-                    <CloseIcon 
-                      width="16" 
-                      height="16" 
-                      className="text-gray-600"
-                    />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* 検索・フィルターバー */}
+          <TodoSearchBar
+            searchInput={searchInput}
+            onSearchInputChange={setSearchInput}
+            onSearchSubmit={updateSearchURL}
+            onSearchClear={() => {
+              setSearchInput('');
+              updateSearchURL('');
+            }}
+            activeFilters={activeFilters}
+            priorities={priorities}
+            todoStatuses={todoStatuses}
+            onConditionModalOpen={handleConditionModalOpen}
+          />
           {/* ToDoリスト */}
-          <div className="bg-white/30 rounded-xl border border-white/20 shadow relative">
-            {/* ToDoヘッダー */}
-            <div className="px-4 py-2 border-b border-white/30 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">ToDo</h3>
-              <span className="text-sm text-blue-600 font-bold">{todos.length} 件</span>
-            </div>
-            
-            {/* 検索実行時の部分ローディングオーバーレイ */}
-            <TodoListLoadingOverlay isVisible={isFetchTodosLoading} />
-            
-            {todos.length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500">
-                該当するToDoがありません
-              </div>
-            ) : (
-              todos.map((todo, index) => {
-              const isFirst = index === 0;
-              const isLast = index === todos.length - 1;
-              const isSingle = todos.length === 1;
-              
-              let roundedClass = '';
-              let borderClass = '';
-              if (isSingle) {
-                roundedClass = 'rounded-xl';
-                borderClass = '';
-              } else if (isFirst) {
-                roundedClass = 'rounded-t-xl';
-                borderClass = 'border-b border-white/20';
-              } else if (isLast) {
-                roundedClass = 'rounded-b-xl';
-                borderClass = '';
-              } else {
-                roundedClass = 'rounded-none';
-                borderClass = 'border-b border-white/20';
-              }
-              
-              return (
-                <div
-                  key={todo.id}
-                  className={`${roundedClass} ${borderClass} p-4 relative group`}
-                >
-                {/* メニューボタン */}
-                <button
-                  onClick={(e) => toggleMenu(todo.id, e)}
-                  className="absolute top-4 right-4 p-3 hover:bg-black/10 rounded-full transition-colors"
-                >
-                  <SubMenuIcon width="22" height="22" className="text-[#374151]" />
-                </button>
-
-                {/* メニュー */}
-                {openMenuId === todo.id && (
-                  <div className="absolute top-12 right-4 bg-white rounded-lg shadow-lg py-2 z-10">
-                    <button
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors"
-                      onClick={() => startEdit(todo)}
-                    >
-                      編集
-                    </button>
-                    <button
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 transition-colors"
-                      onClick={() => startDelete(todo)}
-                    >
-                      削除
-                    </button>
-                  </div>
-                )}
-
-                {/* ToDo内容 */}
-                <div className="pr-12">
-                  <h3 className="font-bold text-lg text-text leading-none pr-8">{todo.todo_title}</h3>
-                  <div className="flex gap-2 mt-2">
-                    {todo.priority && <PriorityBadge priority={todo.priority} size="sm" />}
-                    {todo.status && <StatusBadge status={todo.status} size="sm" />}
-                  </div>
-                  <div className="text-text text-sm whitespace-pre-wrap mt-2">{todo.todo_text}</div>
-                </div>
-                </div>
-              );
-            })
-            )}
-          </div>
+          <TodoList
+            todos={todos}
+            isFetchTodosLoading={isFetchTodosLoading}
+            openMenuId={openMenuId}
+            onToggleMenu={toggleMenu}
+            onStartEdit={startEdit}
+            onStartDelete={startDelete}
+          />
         </main>
       </div>
 
