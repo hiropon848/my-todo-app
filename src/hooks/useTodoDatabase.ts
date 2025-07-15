@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
+import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
 
 /**
  * ToDoデータベース操作を管理するフック
@@ -98,11 +99,13 @@ export function useTodoDatabase() {
       
       return inserted;
     } catch (error) {
+      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      const classifiedError = classifyError(error);
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Unexpected error in addTodo:', error);
+        logClassifiedError(classifiedError, 'useTodoDatabase.addTodo');
       }
-      const errorMessage = error instanceof Error ? error.message : 'ToDoの追加に失敗しました';
-      setError(errorMessage);
+      // Step 2-B: 分類されたエラーメッセージを使用
+      setError(classifiedError.message);
       return null;
     }
   }, [getDefaultPriorityId]);
@@ -149,7 +152,13 @@ export function useTodoDatabase() {
       
       return updatedTodo;
     } catch (error) {
-      setError(error instanceof Error ? error.message : '編集に失敗しました');
+      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'useTodoDatabase.updateTodo');
+      }
+      // Step 2-B: 分類されたエラーメッセージを使用
+      setError(classifiedError.message);
       return null;
     }
   }, []);
@@ -163,7 +172,13 @@ export function useTodoDatabase() {
       }
       return true;
     } catch (error) {
-      setError(error instanceof Error ? error.message : '削除に失敗しました');
+      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'useTodoDatabase.deleteTodo');
+      }
+      // Step 2-B: 分類されたエラーメッセージを使用
+      setError(classifiedError.message);
       return false;
     }
   }, []);

@@ -17,6 +17,7 @@ import { SortOption } from '@/types/todo';
 import { TodoSearchBar } from '@/components/todos/TodoSearchBar';
 import { TodoList } from '@/components/todos/TodoList';
 import { TodoModals } from '@/components/todos/TodoModals';
+import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
 
 function TodosPageContent() {
   const router = useRouter();
@@ -152,8 +153,14 @@ function TodosPageContent() {
       }
       showToast('更新に失敗しました', 'error');
       return false;
-    } catch {
-      showToast('更新に失敗しました', 'error');
+    } catch (error) {
+      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'TodosPage.handleModalSave');
+      }
+      // Step 2-B: 分類されたエラーメッセージを使用
+      showToast(classifiedError.message, 'error');
       return false;
     }
   };
@@ -218,8 +225,13 @@ function TodosPageContent() {
       showToast('作成に失敗しました', 'error');
       return false;
     } catch (error) {
-      console.error('❌ Unexpected error in handleAddModalSave:', error);
-      showToast('作成に失敗しました', 'error');
+      // Step 2-A,2-B: エラー分類システム適用とユーザーフレンドリーメッセージ
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'TodosPage.handleAddModalSave');
+      }
+      // Step 2-B: 分類されたエラーメッセージを使用
+      showToast(classifiedError.message, 'error');
       return false;
     }
   };
@@ -432,7 +444,11 @@ function TodosPageContent() {
         console.log('🔍 検索URL更新完了');
       }
     } catch (error) {
-      console.error('検索URL更新エラー:', error);
+      // Step 2-A: エラー分類システム適用
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'TodosPage.handleSearchUpdate');
+      }
       // URL更新に失敗してもアプリケーションは継続動作
     }
   }, [currentSearchKeyword, getFiltersFromURL, getSortFromURL, router]);

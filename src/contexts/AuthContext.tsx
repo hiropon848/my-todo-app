@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
 
 interface User {
   id: string;
@@ -62,6 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
         
         if (authError) {
+          // Step 2-A: エラー分類システム適用
+          const classifiedError = classifyError(authError);
+          if (process.env.NODE_ENV === 'development') {
+            logClassifiedError(classifiedError, 'AuthContext.getUser');
+          }
           setAuthState({ user: null, status: 'unauthenticated' });
           return;
         }
@@ -81,7 +87,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
         
         if (profileError) {
-          console.warn('Profile fetch error (user still authenticated):', profileError.message);
+          // Step 2-A: エラー分類システム適用
+          const classifiedError = classifyError(profileError);
+          if (process.env.NODE_ENV === 'development') {
+            logClassifiedError(classifiedError, 'AuthContext.getProfile');
+          }
           const userData: User = {
             id: authUser.id,
             lastName: '',
@@ -101,7 +111,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAuthState({ user: userData, status: 'authenticated' });
         }
       } catch (error) {
-        console.error('Unexpected auth check error:', error);
+        // Step 2-A: エラー分類システム適用
+        const classifiedError = classifyError(error);
+        if (process.env.NODE_ENV === 'development') {
+          logClassifiedError(classifiedError, 'AuthContext.checkAuth');
+        }
         if (mounted) {
           setAuthState({ user: null, status: 'unauthenticated' });
         }
@@ -151,7 +165,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.location.href = '/login';
       
     } catch (error) {
-      console.error('❌ Logout failed:', error);
+      // Step 2-A: エラー分類システム適用
+      const classifiedError = classifyError(error);
+      if (process.env.NODE_ENV === 'development') {
+        logClassifiedError(classifiedError, 'AuthContext.logout');
+      }
       setAuthState(prev => ({ ...prev, status: 'authenticated' }));
     }
   };
