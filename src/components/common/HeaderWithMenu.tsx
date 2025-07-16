@@ -8,7 +8,7 @@ import { PasswordModal } from '@/components/common/PasswordModal';
 import { ProfileModal } from '@/components/common/ProfileModal';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { useProfile } from '@/hooks/useProfile';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/contexts/ToastContext';
 
 interface HeaderWithMenuProps {
   title: string;

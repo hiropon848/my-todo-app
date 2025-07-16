@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { HeaderWithMenu } from '@/components/common/HeaderWithMenu';
 import { useTodos } from '@/hooks/useTodos';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/contexts/ToastContext';
 import { useURLFilters } from '@/hooks/useURLFilters';
 import { useTodoPriorities } from '@/hooks/useTodoPriorities';
 import { useTodoStatuses } from '@/hooks/useTodoStatuses';
@@ -17,7 +17,6 @@ import { SortOption } from '@/types/todo';
 import { TodoSearchBar } from '@/components/todos/TodoSearchBar';
 import { TodoList } from '@/components/todos/TodoList';
 import { TodoModals } from '@/components/todos/TodoModals';
-import { Toast } from '@/components/common/Toast';
 import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
 import { ErrorRecovery } from '@/components/common/ErrorRecovery';
 
@@ -100,7 +99,7 @@ function TodosPageContent() {
     offlineState  // Step 2-C-3: オフライン状態を追加
   } = useTodos(user?.id || null, filterParams);
   
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
 
   // 認証チェック（AuthContextで管理されているが、未認証時のリダイレクト処理）
@@ -658,15 +657,7 @@ function TodosPageContent() {
         onConditionCancel={() => setIsConditionModalOpen(false)}
       />
 
-      {/* トースト通知（最上位配置） */}
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          isShow={toast.isShow} 
-          onClose={hideToast}
-        />
-      )}
+      {/* トースト通知（layout.tsxで一元管理） */}
     </div>
   );
 }
