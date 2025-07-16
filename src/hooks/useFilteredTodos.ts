@@ -19,7 +19,7 @@ export function useFilteredTodos(userId: string | null, filterParams?: {
   const [error, setError] = useState('');
   
   // データベース操作フック
-  const { error: databaseError, setError: setDatabaseError, addTodo: databaseAddTodo, updateTodo: databaseUpdateTodo, deleteTodo: databaseDeleteTodo } = useTodoDatabase();
+  const { error: databaseError, setError: setDatabaseError, addTodo: databaseAddTodo, updateTodo: databaseUpdateTodo, deleteTodo: databaseDeleteTodo, offlineState } = useTodoDatabase();
   
   // 前回のfilterParamsを保持（検索キーワードのみの変更を検知するため）
   const prevFilterParamsRef = useRef<typeof filterParams>(filterParams);
@@ -358,6 +358,7 @@ export function useFilteredTodos(userId: string | null, filterParams?: {
     refetchTodos,
     deleteTodo,
     addTodo,
-    updateTodo
+    updateTodo,
+    offlineState
   };
 }

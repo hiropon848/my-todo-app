@@ -59,10 +59,11 @@ export function Toast({ message, type, isShow, onClose }: ToastProps) {
 
   return (
     <div
-      className={`fixed left-0 right-0 bottom-0 z-[100] w-full px-0 py-4 flex items-center justify-center transition-all duration-300 ${
+      className={`fixed left-0 right-0 bottom-0 w-full px-0 py-4 flex items-center justify-center transition-all duration-300 ${
         isToastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
       } ${isToastFading ? 'opacity-0' : ''}`}
       style={{
+        zIndex: 9999,
         background: currentStyle.background,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',

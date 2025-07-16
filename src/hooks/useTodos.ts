@@ -21,7 +21,8 @@ export function useTodos(userId: string | null, filterParams?: {
     updateTodosList,
     deleteTodo,
     addTodo: filteredAddTodo,
-    updateTodo: filteredUpdateTodo
+    updateTodo: filteredUpdateTodo,
+    offlineState
   } = useFilteredTodos(userId, filterParams);
 
   // 既存APIとの互換性維持: userIdを自動的に渡すラッパー関数（Step 2-C-2: エラー復旧UI対応）
@@ -74,6 +75,7 @@ export function useTodos(userId: string | null, filterParams?: {
     error,
     deleteTodo,
     addTodo,
-    updateTodo
+    updateTodo,
+    offlineState
   };
 }

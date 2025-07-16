@@ -5,7 +5,6 @@ import { TodoAddModal } from '@/components/TodoAddModal';
 import { TodoEditModal } from '@/components/TodoEditModal';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { ConditionModal } from '@/components/common/ConditionModal';
-import { Toast } from '@/components/common/Toast';
 import { SortOption } from '@/types/todo';
 
 interface TodoModalsProps {
@@ -47,14 +46,6 @@ interface TodoModalsProps {
   };
   onConditionSave: (selectedPriorities: Set<string>, selectedStatuses: Set<string>, sortOption: SortOption) => Promise<boolean>;
   onConditionCancel: () => void;
-  
-  // トースト通知
-  toast: {
-    message: string;
-    type: 'success' | 'error';
-    isShow: boolean;
-  } | null;
-  onToastClose: () => void;
 }
 
 export function TodoModals({
@@ -80,11 +71,7 @@ export function TodoModals({
   isConditionModalOpen,
   conditionModalInitialState,
   onConditionSave,
-  onConditionCancel,
-  
-  // トースト通知
-  toast,
-  onToastClose
+  onConditionCancel
 }: TodoModalsProps) {
   
   return (
@@ -126,15 +113,6 @@ export function TodoModals({
         initialSortOption={conditionModalInitialState.sortOption}
       />
 
-      {/* トースト通知 */}
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          isShow={toast.isShow} 
-          onClose={onToastClose}
-        />
-      )}
     </>
   );
 }

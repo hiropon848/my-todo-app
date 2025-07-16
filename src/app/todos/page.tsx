@@ -17,6 +17,7 @@ import { SortOption } from '@/types/todo';
 import { TodoSearchBar } from '@/components/todos/TodoSearchBar';
 import { TodoList } from '@/components/todos/TodoList';
 import { TodoModals } from '@/components/todos/TodoModals';
+import { Toast } from '@/components/common/Toast';
 import { classifyError, logClassifiedError } from '@/utils/errorClassifier';
 import { ErrorRecovery } from '@/components/common/ErrorRecovery';
 
@@ -95,7 +96,8 @@ function TodosPageContent() {
     error: todosError, 
     deleteTodo, 
     addTodo,
-    updateTodo
+    updateTodo,
+    offlineState  // Step 2-C-3: オフライン状態を追加
   } = useTodos(user?.id || null, filterParams);
   
   const { toast, showToast, hideToast } = useToast();
@@ -571,9 +573,31 @@ function TodosPageContent() {
           onUserUpdate={updateUser}
         />
         <main className="px-2 pt-6 pb-6">
+          {/* Step 2-C-3: オフライン状態表示 */}
+          {!offlineState.isOnline && (
+            <div className="mb-6 p-3 rounded-xl bg-yellow-50/80 border border-yellow-200/50 backdrop-blur-md shadow">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                <span className="text-yellow-800 font-medium text-sm">オフライン状態</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Step 2-C-3: 復旧処理中表示 */}
+          {offlineState.isRecovering && (
+            <div className="mb-4 p-3 rounded-lg bg-blue-50/80 border border-blue-200/50 backdrop-blur-md">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-blue-400 rounded-full animate-spin"></div>
+                <span className="text-blue-800 font-medium text-sm">同期処理中...</span>
+              </div>
+              <p className="text-blue-700 text-xs mt-1">
+                未送信の操作を同期しています（復旧済み: {offlineState.recoveredCount}件）
+              </p>
+            </div>
+          )}
           {/* Step 2-C-2: エラー復旧UI表示 */}
           {lastError && (
-            <div className="mb-4">
+            <div className="mb-6">
               <ErrorRecovery
                 error={lastError}
                 onRetry={handleRetry}
@@ -615,7 +639,7 @@ function TodosPageContent() {
         </main>
       </div>
 
-      {/* モーダル・トースト管理 */}
+      {/* モーダル管理 */}
       <TodoModals
         isTodoAddModalOpen={isTodoAddModalOpen}
         onAddModalSave={handleAddModalSave}
@@ -632,9 +656,17 @@ function TodosPageContent() {
         conditionModalInitialState={conditionModalInitialState}
         onConditionSave={handleConditionSave}
         onConditionCancel={() => setIsConditionModalOpen(false)}
-        toast={toast}
-        onToastClose={hideToast}
       />
+
+      {/* トースト通知（最上位配置） */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          isShow={toast.isShow} 
+          onClose={hideToast}
+        />
+      )}
     </div>
   );
 }

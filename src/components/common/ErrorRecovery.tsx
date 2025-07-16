@@ -72,7 +72,7 @@ export function ErrorRecovery({ error, onRetry, isRetrying = false, className = 
 
   return (
     <div className={`
-      p-4 rounded-2xl shadow-xl
+      p-4 rounded-xl shadow
       bg-red-50/80 border border-red-200/50
       backdrop-blur-md
       ${className}

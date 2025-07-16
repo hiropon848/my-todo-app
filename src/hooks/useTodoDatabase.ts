@@ -3,15 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { Todo } from '@/types/todo';
 import { useTodoPriorities } from './useTodoPriorities';
 import { useAutoRetry } from './useAutoRetry';
+import { useOfflineRecovery } from './useOfflineRecovery';
 
 /**
  * ToDoデータベース操作を管理するフック
  * 責任: Supabaseとの直接的なCRUD操作・データ検証・エラーハンドリング
  */
 export function useTodoDatabase() {
+  console.log('🔍 [useTodoDatabase] 関数実行開始');
   const [error, setError] = useState('');
   const { getDefaultPriorityId } = useTodoPriorities();
   const { retryTodoOperation } = useAutoRetry();
+  const { state: offlineState, queueOperation } = useOfflineRecovery();
 
   // ToDo追加ロジック（Step 2-C-1: 自動リトライ機能適用）
   const addTodo = useCallback(async (
@@ -33,6 +36,19 @@ export function useTodoDatabase() {
       return null;
     }
     
+    // Step 2-C-3: オフライン状態の場合はキューに保存
+    if (!offlineState.isOnline) {
+      const operationData = {
+        id: `add-${Date.now()}-${Math.random()}`,
+        operation: 'add' as const,
+        data: { userId, title, text, priorityId, statusId },
+        timestamp: Date.now(),
+        context: 'addTodo'
+      };
+      queueOperation(operationData);
+      throw new Error('オフライン状態のため操作できません');
+    }
+
     // Step 2-C-1: 自動リトライ機能適用 - addTodo操作をリトライ対応
     return await retryTodoOperation(async () => {
       console.log('🟠 [useTodoDatabase] retryTodoOperation内部関数開始');
@@ -102,7 +118,7 @@ export function useTodoDatabase() {
       console.log('🟠 [useTodoDatabase] insert成功、Todo返却');
       return inserted;
     }, 'useTodoDatabase.addTodo');
-  }, [getDefaultPriorityId, retryTodoOperation]);
+  }, [getDefaultPriorityId, retryTodoOperation, offlineState.isOnline, queueOperation]);
 
   // ToDo更新ロジック（Step 2-C-1: 自動リトライ機能適用）
   const updateTodo = useCallback(async (
@@ -113,6 +129,19 @@ export function useTodoDatabase() {
     statusId?: string
   ): Promise<Todo | null> => {
     setError('');
+    
+    // Step 2-C-3: オフライン状態の場合はキューに保存
+    if (!offlineState.isOnline) {
+      const operationData = {
+        id: `update-${Date.now()}-${Math.random()}`,
+        operation: 'update' as const,
+        data: { id, title, text, priorityId, statusId },
+        timestamp: Date.now(),
+        context: 'updateTodo'
+      };
+      queueOperation(operationData);
+      throw new Error('オフライン状態のため操作できません');
+    }
     
     // Step 2-C-1: 自動リトライ機能適用 - updateTodo操作をリトライ対応
     return await retryTodoOperation(async () => {
@@ -148,10 +177,23 @@ export function useTodoDatabase() {
       
       return updatedTodo;
     }, 'useTodoDatabase.updateTodo');
-  }, [retryTodoOperation]);
+  }, [retryTodoOperation, offlineState.isOnline, queueOperation]);
 
   // ToDo削除ロジック（Step 2-C-1: 自動リトライ機能適用）
   const deleteTodo = useCallback(async (id: string): Promise<boolean> => {
+    // Step 2-C-3: オフライン状態の場合はキューに保存
+    if (!offlineState.isOnline) {
+      const operationData = {
+        id: `delete-${Date.now()}-${Math.random()}`,
+        operation: 'delete' as const,
+        data: { id },
+        timestamp: Date.now(),
+        context: 'deleteTodo'
+      };
+      queueOperation(operationData);
+      throw new Error('オフライン状態のため操作できません');
+    }
+    
     // Step 2-C-1: 自動リトライ機能適用 - deleteTodo操作をリトライ対応
     const result = await retryTodoOperation(async () => {
       const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
@@ -162,13 +204,14 @@ export function useTodoDatabase() {
     }, 'useTodoDatabase.deleteTodo');
     
     return result !== null ? result : false;
-  }, [retryTodoOperation]);
+  }, [retryTodoOperation, offlineState.isOnline, queueOperation]);
 
   return {
     error,
     setError,
     addTodo,
     updateTodo,
-    deleteTodo
+    deleteTodo,
+    offlineState
   };
 }
