@@ -25,7 +25,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success', duration: number = 10000) => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success', duration: number = 5000) => {
     // 既存のタイマーをクリア
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
