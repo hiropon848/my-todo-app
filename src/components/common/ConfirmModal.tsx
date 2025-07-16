@@ -10,6 +10,7 @@ interface ConfirmModalProps extends CancelableModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  loadingText?: string;
   onConfirm: () => Promise<void>;
   variant?: 'danger' | 'default';
 }
@@ -20,6 +21,7 @@ export function ConfirmModal({
   message, 
   confirmText = 'OK', 
   cancelText = 'キャンセル',
+  loadingText = '処理中...',
   onConfirm, 
   onCancel,
   variant = 'default'
@@ -174,10 +176,14 @@ export function ConfirmModal({
             </button>
             <button
               onClick={handleConfirm}
-              className={`flex-1 px-4 py-2 text-base font-bold rounded-[2rem] transition-colors ${confirmButtonStyle}`}
+              className={`flex-1 px-4 py-2 text-base font-bold rounded-[2rem] transition-colors ${
+                isLoading 
+                  ? 'bg-red-500/15 text-red-500/50 cursor-not-allowed' 
+                  : confirmButtonStyle
+              }`}
               disabled={isLoading}
             >
-              {isLoading ? '処理中...' : confirmText}
+              {isLoading ? loadingText : confirmText}
             </button>
           </div>
         </div>

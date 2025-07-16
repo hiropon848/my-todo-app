@@ -97,6 +97,7 @@ export function TodoModals({
         title="ToDoの削除"
         message={`「${deletingTodo?.todo_title}」を削除しますか？`}
         confirmText="削除"
+        loadingText="削除中..."
         variant="danger"
         onConfirm={onDeleteConfirm}
         onCancel={onDeleteCancel}
